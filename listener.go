@@ -46,14 +46,8 @@ func (this *Listener) run() {
 		out, e := cmd.CombinedOutput()
 
 		if e != nil {
-			if len(msg["mailto"]) > 0 {
-				subject := fmt.Sprintf("FAILED: %s", msg["cmd"])
-				to := strings.Split(msg["mailto"], ",")
-				e := this.email(subject, fmt.Sprintf("%s", e), to)
-				if e != nil {
-					log.Printf("ERROR: %s\n", e)
-				}
-			}
+			subject := fmt.Sprintf("FAILED: %s", msg["cmd"])
+			this.email(subject, fmt.Sprintf("%s", e), msg["mailto"])
 		}
 
 		fmt.Fprintf(os.Stderr, "%s", out)
@@ -61,8 +55,15 @@ func (this *Listener) run() {
 	}
 }
 
-func (this *Listener) email(sbjct, body string, to []string) error {
+func (this *Listener) email(sbjct, body string, mailto string) {
+	if len(mailto) < 1 { //no email addresses
+		return
+	}
+	to := strings.Split(mailto, ",")
 	subject := fmt.Sprintf("Subject: %s\r\n\r\n", sbjct)
 	msg := fmt.Sprintf("%s%s", subject, body)
-	return smtp.SendMail("smtp.us.drwholdings.com:25", nil, "glow@drw.com", to, []byte(msg))
+	e := smtp.SendMail("smtp.us.drwholdings.com:25", nil, "glow@drw.com", to, []byte(msg))
+	if e != nil {
+		log.Printf("ERROR: %s\n", e)
+	}
 }
