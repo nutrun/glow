@@ -21,7 +21,7 @@ func NewClient() (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir string) error {
+func (this *Client) put(cmd, mailto, workdir, out string) error {
 	msg := make(map[string]string)
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
@@ -33,7 +33,7 @@ func (this *Client) put(cmd, mailto, workdir string) error {
 		return e
 	}
 	msg["workdir"] = workdir
-	msg["out"] = "glow.out"
+	msg["out"] = out
 	message, e := json.Marshal(msg)
 	log.Printf("RUNNING: %s\n", message)
 	if e != nil {
