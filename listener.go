@@ -53,7 +53,7 @@ listenerloop:
 		json.Unmarshal([]byte(job.Body), &msg)
 		e = os.Chdir(msg["workdir"])
 		if e != nil {
-			this.failmail(msg, e)
+			this.catch(msg, e)
 			job.Delete()
 			goto listenerloop
 		}
@@ -63,13 +63,13 @@ listenerloop:
 		cmd := exec.Command(command, args...)
 		_, e = cmd.CombinedOutput()
 		if e != nil {
-			this.failmail(msg, e)
+			this.catch(msg, e)
 		}
 		job.Delete()
 	}
 }
 
-func (this *Listener) failmail(msg map[string]string, e error) {
+func (this *Listener) catch(msg map[string]string, e error) {
 	log.Print(e)
 	if Config.SmtpServerAddr == "" {
 		return
