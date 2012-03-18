@@ -69,6 +69,7 @@ listenerloop:
 	}
 }
 
+// Log and email errors
 func (this *Listener) catch(msg map[string]string, e error) {
 	log.Print(e)
 	if Config.SmtpServerAddr == "" {
@@ -86,6 +87,7 @@ func (this *Listener) catch(msg map[string]string, e error) {
 	}
 }
 
+// Wait for currently running job to finish before exiting on SIGTERM and SIGINT
 func (this *Listener) trap() {
 	receivedSignal := make(chan os.Signal)
 	signal.Notify(receivedSignal, syscall.SIGTERM, syscall.SIGINT)
