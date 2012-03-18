@@ -31,7 +31,7 @@ func NewListener() (*Listener, error) {
 }
 
 func (this *Listener) run() {
-	this.handleSignals()
+	go this.trap()
 
 listenerloop:
 	for {
@@ -86,15 +86,13 @@ func (this *Listener) catch(msg map[string]string, e error) {
 	}
 }
 
-func (this *Listener) handleSignals() {
+func (this *Listener) trap() {
 	receivedSignal := make(chan os.Signal)
 	signal.Notify(receivedSignal, syscall.SIGTERM, syscall.SIGINT)
 
-	go func() {
 		for {
 			sig := <-receivedSignal
 			log.Printf("Got signal %d. Waiting for current job to complete.", sig)
 			this.stopped = true
 		}
-	}()
 }
