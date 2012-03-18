@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	beanstalk "github.com/nutrun/beanstalk.go"
 	"path/filepath"
+	"log"
 )
 
 type Client struct {
@@ -32,7 +33,9 @@ func (this *Client) put(cmd, mailto, workdir string) error {
 		return e
 	}
 	msg["workdir"] = workdir
+	msg["out"] = "glow.out"
 	message, e := json.Marshal(msg)
+	log.Printf("RUNNING: %s\n", message)
 	if e != nil {
 		return e
 	}

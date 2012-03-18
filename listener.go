@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	beanstalk "github.com/nutrun/beanstalk.go"
+	"io/ioutil"
 	"log"
 	"net/smtp"
 	"os"
@@ -61,11 +62,17 @@ listenerloop:
 		command := messagetokens[0]
 		args := messagetokens[1:len(messagetokens)]
 		cmd := exec.Command(command, args...)
-		_, e = cmd.CombinedOutput()
+		out, e := cmd.CombinedOutput()
 		if e != nil {
 			this.catch(msg, e)
 		}
 		job.Delete()
+		if len(out) > 0 {
+			e = ioutil.WriteFile(msg["out"], out, 0644)
+			if e != nil {
+				this.catch(msg, e)
+			}
+		}
 	}
 }
 
