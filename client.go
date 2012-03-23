@@ -2,18 +2,17 @@ package main
 
 import (
 	"encoding/json"
-	beanstalk "github.com/nutrun/beanstalk.go"
 	"path/filepath"
 	"log"
 )
 
 type Client struct {
-	q *beanstalk.Conn
+	q *Conn
 }
 
 func NewClient() (*Client, error) {
 	this := new(Client)
-	q, err := beanstalk.Dial(Config.QueueAddr)
+	q, err := Dial(Config.QueueAddr)
 	if err != nil {
 		return nil, err
 	}

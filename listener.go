@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	beanstalk "github.com/nutrun/beanstalk.go"
 	"io/ioutil"
 	"log"
 	"net/smtp"
@@ -15,13 +14,13 @@ import (
 )
 
 type Listener struct {
-	q       *beanstalk.Conn
+	q       *Conn
 	stopped bool
 }
 
 func NewListener() (*Listener, error) {
 	this := new(Listener)
-	q, err := beanstalk.Dial(Config.QueueAddr)
+	q, err := Dial(Config.QueueAddr)
 
 	if err != nil {
 		return nil, err
