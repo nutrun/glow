@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"path/filepath"
 	"log"
+	"path/filepath"
 )
 
 type Client struct {
@@ -20,13 +20,11 @@ func NewClient() (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir, out string) error {
+func (this *Client) put(cmd, mailto, workdir, out, tube string) error {
 	msg := make(map[string]string)
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
-	if workdir == "" {
-		workdir = "."
-	}
+	msg["tube"] = tube
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
 		return e
@@ -38,6 +36,14 @@ func (this *Client) put(cmd, mailto, workdir, out string) error {
 	if e != nil {
 		return e
 	}
-	_, e = this.q.Put(string(message), 0, 0, 1000*60*60) // An hour TTR?
+	if tube != "default" {
+		t, e := NewTube(this.q, tube)
+		if e != nil {
+			return e
+		}
+		_, e = t.Put(string(message), 0, 0, 1000*60*60) // An hour TTR?
+	} else {
+		_, e = this.q.Put(string(message), 0, 0, 1000*60*60) // An hour TTR?
+	}
 	return e
 }

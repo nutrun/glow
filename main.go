@@ -12,6 +12,7 @@ var help *bool = flag.Bool("help", false, "Show help")
 var mailto *string = flag.String("mailto", "", "Who to email on failure")
 var workdir *string = flag.String("workdir", ".", "Directory to run job from")
 var out *string = flag.String("out", "/dev/null", "File to send job's stdout and stderr")
+var tube *string = flag.String("tube", "default", "Beanstalkd tube to send the job to")
 
 func main() {
 	flag.Parse()
@@ -31,7 +32,7 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 		cmd := strings.Join(flag.Args(), " ")
-		e = c.put(cmd, *mailto, *workdir, *out)
+		e = c.put(cmd, *mailto, *workdir, *out, *tube)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
