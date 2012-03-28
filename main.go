@@ -13,6 +13,7 @@ var mailto *string = flag.String("mailto", "", "Who to email on failure")
 var workdir *string = flag.String("workdir", ".", "Directory to run job from")
 var out *string = flag.String("out", "/dev/null", "File to send job's stdout and stderr")
 var tube *string = flag.String("tube", "default", "Beanstalkd tube to send the job to")
+var stats *bool = flag.Bool("stats", false, "Show queue stats")
 
 func main() {
 	flag.Parse()
@@ -23,6 +24,15 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 		l.run()
+	} else if *stats {
+		c, e := NewClient()
+		if e != nil {
+			log.Fatalf("ERROR: %s", e.Error())
+		}
+		e = c.stats()
+		if e != nil {
+			log.Fatalf("ERROR: %s", e.Error())
+		}
 	} else if *help || len(flag.Args()) == 0 {
 		flag.Usage()
 		os.Exit(1)

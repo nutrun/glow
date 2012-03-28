@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"lentil"
 	"log"
 	"net/smtp"
 	"os"
@@ -14,13 +15,13 @@ import (
 )
 
 type Listener struct {
-	q       *Conn
+	q       *lentil.Beanstalkd
 	stopped bool
 }
 
 func NewListener() (*Listener, error) {
 	this := new(Listener)
-	q, err := Dial(Config.QueueAddr)
+	q, err := lentil.Dial(Config.QueueAddr)
 
 	if err != nil {
 		return nil, err
@@ -38,10 +39,8 @@ listenerloop:
 		if this.stopped {
 			os.Exit(0)
 		}
-
 		// Timeout every 1 second to handle kill signals
-		job, e := this.q.ReserveWithTimeout(1 * 1000 * 1000) // 1 second
-
+		job, e := this.q.ReserveWithTimeout(1) // 1 second
 		if e != nil {
 			if strings.Contains(e.Error(), "TIMED_OUT") {
 				goto listenerloop
@@ -54,7 +53,7 @@ listenerloop:
 		e = os.Chdir(msg["workdir"])
 		if e != nil {
 			this.catch(msg, e)
-			job.Delete()
+			this.q.Delete(job.Id)
 			goto listenerloop
 		}
 		messagetokens := strings.Split(msg["cmd"], " ")
@@ -65,7 +64,7 @@ listenerloop:
 		if e != nil {
 			this.catch(msg, e)
 		}
-		job.Delete()
+		this.q.Delete(job.Id)
 		if len(out) > 0 {
 			e = ioutil.WriteFile(msg["out"], out, 0644)
 			if e != nil {
