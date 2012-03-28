@@ -14,18 +14,19 @@ var workdir *string = flag.String("workdir", ".", "Directory to run job from")
 var out *string = flag.String("out", "/dev/null", "File to send job's stdout and stderr")
 var tube *string = flag.String("tube", "default", "Beanstalkd tube to send the job to")
 var stats *bool = flag.Bool("stats", false, "Show queue stats")
+var verbose *bool = flag.Bool("v", false, "Increase verbosity")
 
 func main() {
 	flag.Parse()
 
 	if *listener {
-		l, e := NewListener()
+		l, e := NewListener(*verbose)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 		l.run()
 	} else if *stats {
-		c, e := NewClient()
+		c, e := NewClient(*verbose)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
@@ -37,7 +38,7 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	} else {
-		c, e := NewClient()
+		c, e := NewClient(*verbose)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}

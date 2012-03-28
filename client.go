@@ -11,15 +11,17 @@ import (
 
 type Client struct {
 	q *lentil.Beanstalkd
+	verbose bool
 }
 
-func NewClient() (*Client, error) {
+func NewClient(verbose bool) (*Client, error) {
 	this := new(Client)
 	q, err := lentil.Dial(Config.QueueAddr)
 	if err != nil {
 		return nil, err
 	}
 	this.q = q
+	this.verbose = verbose
 	return this, nil
 }
 
@@ -35,7 +37,9 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string) error {
 	msg["workdir"] = workdir
 	msg["out"] = out
 	message, e := json.Marshal(msg)
-	log.Printf("RUNNING: %s\n", message)
+	if this.verbose {
+		log.Printf("RUNNING: %s\n", message)
+	}
 	if e != nil {
 		return e
 	}

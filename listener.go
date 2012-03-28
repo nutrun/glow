@@ -17,9 +17,10 @@ import (
 type Listener struct {
 	q       *lentil.Beanstalkd
 	stopped bool
+	verbose bool
 }
 
-func NewListener() (*Listener, error) {
+func NewListener(verbose bool) (*Listener, error) {
 	this := new(Listener)
 	q, err := lentil.Dial(Config.QueueAddr)
 
@@ -28,6 +29,7 @@ func NewListener() (*Listener, error) {
 	}
 
 	this.q = q
+	this.verbose = verbose
 	return this, nil
 }
 
@@ -47,7 +49,9 @@ listenerloop:
 			}
 			log.Fatal(e)
 		}
-		log.Printf("RUNNING: %s", job.Body)
+		if this.verbose {
+			log.Printf("RUNNING: %s", job.Body)
+		}
 		msg := make(map[string]string)
 		json.Unmarshal([]byte(job.Body), &msg)
 		e = os.Chdir(msg["workdir"])
