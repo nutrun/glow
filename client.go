@@ -25,10 +25,11 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir, out, tube string) error {
+func (this *Client) put(cmd, mailto, workdir, out, tube, depends string) error {
 	msg := make(map[string]string)
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
+	msg["depends"] = depends
 	msg["tube"] = tube
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
