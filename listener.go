@@ -42,7 +42,7 @@ listenerloop:
 			os.Exit(0)
 		}
 		// Timeout every 1 second to handle kill signals
-		job, e := this.q.ReserveWithTimeout(1) // 1 second
+		job, e := this.q.ReserveWithTimeout(1)
 		if e != nil {
 			if strings.Contains(e.Error(), "TIMED_OUT") {
 				goto listenerloop
