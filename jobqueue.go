@@ -35,7 +35,6 @@ func NewTube(depends string) *Tube {
 }
 
 func (this *JobQueue) Next() (*lentil.Job, error) {
-	this.refreshTubes()
 	// Ignore watched tube to allow it to get deleted when empty
 	if this.watched != "" {
 		_, e := this.q.Ignore(this.watched)
@@ -43,6 +42,7 @@ func (this *JobQueue) Next() (*lentil.Job, error) {
 			return nil, e
 		}
 	}
+	this.refreshTubes()
 	for key, tube := range this.tubes {
 		skip := false
 		for _, dependency := range tube.depends {

@@ -1,19 +1,70 @@
 package main
 
-import(
-	"testing"
-	"lentil"
+import (
 	"encoding/json"
+	"lentil"
+	"testing"
 )
 
 func TestDependencies(t *testing.T) {
-	q, e := lentil.Dial("0.0.0.0:11300")
+	q := connect(t)
+	put("job2", "tube2", []string{"tube1"}, q)
+	put("job1", "tube1", make([]string, 0), q)
+	jobqueue := NewJobQueue(q)
+	assertNextJob(t, jobqueue, "job1")
+}
 
+func TestMoarDependencies(t *testing.T) {
+	q := connect(t)
+	nodeps := make([]string, 0)
+	put("job11", "tube1", []string{"tube2", "tube3"}, q)
+	put("job12", "tube1", []string{"tube2", "tube3"}, q)
+	put("job21", "tube2", nodeps, q)
+	put("job22", "tube2", nodeps, q)
+	put("job31", "tube3", []string{"tube2"}, q)
+	put("job32", "tube3", []string{"tube2"}, q)
+	jobqueue := NewJobQueue(q)
+	assertNextJob(t, jobqueue, "job21")
+	assertNextJob(t, jobqueue, "job22")
+	assertNextJob(t, jobqueue, "job31")	
+}
+
+func assertNextJob(t *testing.T, jobqueue *JobQueue, expected string) {
+	jobinfo := make(map[string]string)
+	job, e := jobqueue.Next()
+	if e != nil {
+		t.Error(e)
+		return
+	}
+	json.Unmarshal(job.Body, &jobinfo)
+	if jobinfo["name"] != expected {
+		t.Errorf("%s != %s\n", expected, jobinfo["name"])
+	}
+	jobqueue.q.Delete(job.Id)
+}
+
+func put(jobName, tube string, depends []string, q *lentil.Beanstalkd) error {
+	job := make(map[string]string)
+	job["tube"] = tube
+	job["name"] = jobName
+	for _, dependency := range depends {
+		job["depends"] = dependency
+	}
+	jobjson, _ := json.Marshal(job)
+	e := q.Use(tube)
+	if e != nil {
+		return e
+	}
+	_, e = q.Put(0, 0, 60, jobjson)
+	return e
+}
+
+func connect(t *testing.T) *lentil.Beanstalkd {
+	q, e := lentil.Dial("0.0.0.0:11300")
 	if e != nil {
 		t.Fatal(e)
 	}
-
-	// Clear queue
+	// Clear beanstalkd
 	tubes, e := q.ListTubes()
 	if e != nil {
 		t.Fatal(e)
@@ -38,32 +89,5 @@ func TestDependencies(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
-
-	jobqueue := NewJobQueue(q)
-
-	jobWithNoDeps := make(map[string]string)
-	jobWithNoDeps["tube"] = "rock"
-	jobWithNoDeps["name"] = "2"
-	jobWithNoDepsJson, _ := json.Marshal(jobWithNoDeps)
-
-	jobWithDep := make(map[string]string)
-	jobWithDep["tube"] = "metal"
-	jobWithDep["name"] = "1"
-	jobWithDep["depends"] = "rock"
-	jobWithDepJson, _ := json.Marshal(jobWithDep)
-
-	q.Use("metal")
-	q.Put(0, 0, 60, jobWithDepJson)
-	q.Use("rock")
-	q.Put(0, 0, 60, jobWithNoDepsJson)
-
-	job, e := jobqueue.Next()
-	if e != nil {
-		t.Fatal(e)
-	}
-	jobinfo := make(map[string]string)
-	json.Unmarshal(job.Body, &jobinfo)
-	if jobinfo["name"] != "2" {
-		t.Error(jobinfo["name"])
-	}
+	return q
 }
