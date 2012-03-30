@@ -66,6 +66,10 @@ func (this *JobQueue) Next() (*lentil.Job, error) {
 	panic("should never get here")
 }
 
+func (this *JobQueue) Delete(id uint64) {
+	this.q.Delete(id)
+}
+
 func (this *JobQueue) refreshTubes() error {
 	tubes, e := this.q.ListTubes()
 	if e != nil {
