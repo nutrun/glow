@@ -8,9 +8,11 @@ import(
 
 func TestDependencies(t *testing.T) {
 	q, e := lentil.Dial("0.0.0.0:11300")
+
 	if e != nil {
 		t.Fatal(e)
 	}
+
 	// Clear queue
 	tubes, e := q.ListTubes()
 	if e != nil {
@@ -36,22 +38,32 @@ func TestDependencies(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
+
 	jobqueue := NewJobQueue(q)
-	jobinfo := make(map[string]string)
-	jobinfo["tube"] = "rock"
-	jobinfo["name"] = "1"
-	jobjson, e := json.Marshal(jobinfo)
-	if e != nil {
-		t.Error(e)
-	}
-	e = q.Use("rock")
-	if e != nil {
-		t.Error(e)
-	}
-	q.Put(0, 0, 60, jobjson)
+
+	jobWithNoDeps := make(map[string]string)
+	jobWithNoDeps["tube"] = "rock"
+	jobWithNoDeps["name"] = "2"
+	jobWithNoDepsJson, _ := json.Marshal(jobWithNoDeps)
+
+	jobWithDep := make(map[string]string)
+	jobWithDep["tube"] = "metal"
+	jobWithDep["name"] = "1"
+	jobWithDep["depends"] = "rock"
+	jobWithDepJson, _ := json.Marshal(jobWithDep)
+
+	q.Use("metal")
+	q.Put(0, 0, 60, jobWithDepJson)
+	q.Use("rock")
+	q.Put(0, 0, 60, jobWithNoDepsJson)
+
 	job, e := jobqueue.Next()
 	if e != nil {
-		t.Error(e)
+		t.Fatal(e)
 	}
-	println(job.Id)
+	jobinfo := make(map[string]string)
+	json.Unmarshal(job.Body, &jobinfo)
+	if jobinfo["name"] != "2" {
+		t.Error(jobinfo["name"])
+	}
 }

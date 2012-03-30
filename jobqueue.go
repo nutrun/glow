@@ -26,6 +26,9 @@ func NewTube(depends string) *Tube {
 	this := new(Tube)
 	this.depends = make([]string, 0)
 	for _, dependency := range strings.Split(depends, ",") {
+		if dependency == "" {
+			continue
+		}
 		this.depends = append(this.depends, dependency)
 	}
 	return this
@@ -40,13 +43,17 @@ func (this *JobQueue) Next() (*lentil.Job, error) {
 			return nil, e
 		}
 	}
-	// Ignore watched tubes
 	for key, tube := range this.tubes {
+		skip := false
 		for _, dependency := range tube.depends {
 			_, exists := this.tubes[dependency]
 			if exists {
+				skip = true
 				break
 			}
+		}
+		if skip {
+			continue
 		}
 		// Tube doesn't have any active deps, grab a job from it
 		_, e := this.q.Watch(key)
@@ -80,7 +87,6 @@ func (this *JobQueue) refreshTubes() error {
 		return nil
 	}
 	this.tubes = make(map[string]*Tube)
-	jobinfo := make(map[string]string)
 	for _, tubeName := range tubes {
 		if tubeName == "default" {
 			continue
@@ -89,16 +95,21 @@ func (this *JobQueue) refreshTubes() error {
 		if e != nil {
 			return e
 		}
-		job, e := this.q.PeekReady()
+		job, e := this.q.Reserve()
 		if e != nil {
 			return e
 		}
+		jobinfo := make(map[string]string)
 		e = json.Unmarshal(job.Body, &jobinfo)
 		if e != nil {
 			return e
 		}
 		tube := NewTube(jobinfo["depends"])
 		this.tubes[tubeName] = tube
+		e = this.q.Release(job.Id, 0, 0)
+		if e != nil {
+			return e
+		}
 		_, e = this.q.Ignore(tubeName)
 		if e != nil {
 			return e
