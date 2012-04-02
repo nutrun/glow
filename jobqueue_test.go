@@ -6,27 +6,29 @@ import (
 	"testing"
 )
 
-func TestDependencies(t *testing.T) {
+func TestPriority(t *testing.T) {
 	q := connect(t)
-	put("job2", "tube2", []string{"tube1"}, q)
-	put("job1", "tube1", make([]string, 0), q)
-	jobqueue := NewJobQueue(q)
-	assertNextJob(t, jobqueue, "job1")
+	put(t, "job1", "tube1", 2, q)
+	put(t, "job2", "tube2", 0, q)
+	jobs := NewJobQueue(q)
+	assertNextJob(t, jobs, "job2")
 }
 
-func TestMoarDependencies(t *testing.T) {
+func TestMoarPriorities(t *testing.T) {
 	q := connect(t)
-	nodeps := make([]string, 0)
-	put("job11", "tube1", []string{"tube2", "tube3"}, q)
-	put("job12", "tube1", []string{"tube2", "tube3"}, q)
-	put("job21", "tube2", nodeps, q)
-	put("job22", "tube2", nodeps, q)
-	put("job31", "tube3", []string{"tube2"}, q)
-	put("job32", "tube3", []string{"tube2"}, q)
-	jobqueue := NewJobQueue(q)
-	assertNextJob(t, jobqueue, "job21")
-	assertNextJob(t, jobqueue, "job22")
-	assertNextJob(t, jobqueue, "job31")	
+	put(t, "job11", "tube1", 3, q)
+	put(t, "job21", "tube2", 1, q)
+	put(t, "job31", "tube3", 2, q)
+	put(t, "job22", "tube2", 1, q)
+	put(t, "job32", "tube3", 2, q)
+	put(t, "job12", "tube1", 3, q)
+	jobs := NewJobQueue(q)
+	assertNextJob(t, jobs, "job21")
+	assertNextJob(t, jobs, "job22")
+	assertNextJob(t, jobs, "job31")
+	assertNextJob(t, jobs, "job32")
+	assertNextJob(t, jobs, "job11")
+	assertNextJob(t, jobs, "job12")
 }
 
 func assertNextJob(t *testing.T, jobqueue *JobQueue, expected string) {
@@ -40,23 +42,22 @@ func assertNextJob(t *testing.T, jobqueue *JobQueue, expected string) {
 	if jobinfo["name"] != expected {
 		t.Errorf("%s != %s\n", expected, jobinfo["name"])
 	}
-	jobqueue.q.Delete(job.Id)
+	jobqueue.Delete(job.Id)
 }
 
-func put(jobName, tube string, depends []string, q *lentil.Beanstalkd) error {
+func put(t *testing.T, jobName, tube string, pri int, q *lentil.Beanstalkd) {
 	job := make(map[string]string)
 	job["tube"] = tube
 	job["name"] = jobName
-	for _, dependency := range depends {
-		job["depends"] = dependency
-	}
 	jobjson, _ := json.Marshal(job)
 	e := q.Use(tube)
 	if e != nil {
-		return e
+		t.Fatal(e)
 	}
-	_, e = q.Put(0, 0, 60, jobjson)
-	return e
+	_, e = q.Put(pri, 0, 60, jobjson)
+	if e != nil {
+		t.Error(e)
+	}
 }
 
 func connect(t *testing.T) *lentil.Beanstalkd {

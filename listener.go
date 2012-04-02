@@ -35,14 +35,14 @@ func NewListener(verbose bool) (*Listener, error) {
 
 func (this *Listener) run() {
 	go this.trap()
+	jobqueue := NewJobQueue(this.q)
 
 listenerloop:
 	for {
 		if this.stopped {
 			os.Exit(0)
 		}
-		// Timeout every 1 second to handle kill signals
-		job, e := this.q.ReserveWithTimeout(1)
+		job, e := jobqueue.Next()
 		if e != nil {
 			if strings.Contains(e.Error(), "TIMED_OUT") {
 				goto listenerloop
@@ -57,7 +57,7 @@ listenerloop:
 		e = os.Chdir(msg["workdir"])
 		if e != nil {
 			this.catch(msg, e)
-			this.q.Delete(job.Id)
+			jobqueue.Delete(job.Id)
 			goto listenerloop
 		}
 		messagetokens := strings.Split(msg["cmd"], " ")
@@ -68,7 +68,7 @@ listenerloop:
 		if e != nil {
 			this.catch(msg, e)
 		}
-		this.q.Delete(job.Id)
+		jobqueue.Delete(job.Id)
 		if len(out) > 0 {
 			e = ioutil.WriteFile(msg["out"], out, 0644)
 			if e != nil {

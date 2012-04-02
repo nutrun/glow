@@ -1,19 +1,36 @@
 package main
 
 import (
-	"encoding/json"
+	"errors"
 	"lentil"
+	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type JobQueue struct {
-	q       *lentil.Beanstalkd
-	tubes   map[string]*Tube
-	watched string
+	q     *lentil.Beanstalkd
+	tubes Tubes
 }
 
 type Tube struct {
-	depends []string
+	pri  int
+	name string
+}
+
+type Tubes []*Tube
+
+func (t Tubes) Len() int {
+	return len(t)
+}
+
+func (t Tubes) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+
+func (t Tubes) Less(i, j int) bool {
+	return t[i].pri < t[j].pri
 }
 
 func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
@@ -22,102 +39,73 @@ func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
 	return this
 }
 
-func NewTube(depends string) *Tube {
-	this := new(Tube)
-	this.depends = make([]string, 0)
-	for _, dependency := range strings.Split(depends, ",") {
-		if dependency == "" {
-			continue
-		}
-		this.depends = append(this.depends, dependency)
-	}
-	return this
-}
-
 func (this *JobQueue) Next() (*lentil.Job, error) {
-	// Ignore watched tube to allow it to get deleted when empty
-	if this.watched != "" {
-		_, e := this.q.Ignore(this.watched)
-		if e != nil {
-			return nil, e
-		}
+	e := this.refreshTubes()
+	if e != nil {
+		return nil, e
 	}
-	this.refreshTubes()
-	for key, tube := range this.tubes {
-		skip := false
-		for _, dependency := range tube.depends {
-			_, exists := this.tubes[dependency]
-			if exists {
-				skip = true
-				break
-			}
-		}
-		if skip {
-			continue
-		}
-		// Tube doesn't have any active deps, grab a job from it
-		_, e := this.q.Watch(key)
-		if e != nil {
-			return nil, e
-		}
-		this.watched = key
-		return this.q.ReserveWithTimeout(1)
+	// Keep on timing out until there's jobs (we don't watch "default")
+	if len(this.tubes) == 0 {
+		time.Sleep(time.Second)
+		return nil, errors.New("TIMED_OUT")
 	}
-	panic("should never get here")
+	_, e = this.q.Watch(this.tubes[0].name)
+	if e != nil {
+		return nil, e
+	}
+	// Timeout every 1 second to handle kill signals
+	job, e := this.q.ReserveWithTimeout(1)
+	if e != nil {
+		return nil, e
+	}
+	_, e = this.q.Ignore(this.tubes[0].name)
+	if e != nil {
+		return nil, e
+	}
+	return job, nil
 }
 
-func (this *JobQueue) Delete(id uint64) {
-	this.q.Delete(id)
+func (this *JobQueue) Delete(id uint64) error {
+	return this.q.Delete(id)
 }
 
 func (this *JobQueue) refreshTubes() error {
+	this.tubes = make([]*Tube, 0)
 	tubes, e := this.q.ListTubes()
 	if e != nil {
 		return e
 	}
-	// Only gather tube info if list of tubes has changed since last time we checked
-	skipRefresh := true
-	if this.tubes == nil || len(this.tubes) == len(tubes) {
-		for _, tube := range tubes {
-			
-			_, exists := this.tubes[tube]
-			if !exists {
-				skipRefresh = false
-				break
-			}
-		}
-	}
-	if skipRefresh {
-		return nil
-	}
-	this.tubes = make(map[string]*Tube)
-	for _, tubeName := range tubes {
-		if tubeName == "default" {
+	for _, tube := range tubes {
+		if tube == "default" {
 			continue
 		}
-		_, e := this.q.Watch(tubeName)
+		_, e := this.q.Watch(tube)
 		if e != nil {
 			return e
 		}
-		job, e := this.q.Reserve()
+		job, e := this.q.ReserveWithTimeout(0)
+		if e != nil {
+			if strings.Contains(e.Error(), "TIMED_OUT") {
+				continue
+			}
+			return e
+		}
+		stats, e := this.q.StatsJob(job.Id)
 		if e != nil {
 			return e
 		}
-		jobinfo := make(map[string]string)
-		e = json.Unmarshal(job.Body, &jobinfo)
+		priority, _ := strconv.Atoi(stats["pri"])
+		delay, _ := strconv.Atoi(stats["delay"])
+		e = this.q.Release(job.Id, priority, delay)
 		if e != nil {
 			return e
 		}
-		tube := NewTube(jobinfo["depends"])
-		this.tubes[tubeName] = tube
-		e = this.q.Release(job.Id, 0, 0)
-		if e != nil {
-			return e
-		}
-		_, e = this.q.Ignore(tubeName)
+		this.tubes = append(this.tubes, &Tube{priority, tube})
+		_, e = this.q.Ignore(tube)
 		if e != nil {
 			return e
 		}
 	}
+	sort.Sort(this.tubes)
 	return nil
 }

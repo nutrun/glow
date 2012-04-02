@@ -2,15 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"lentil"
 	"log"
 	"os"
 	"path/filepath"
-	"lentil"
 )
 
 type Client struct {
-	q *lentil.Beanstalkd
+	q       *lentil.Beanstalkd
 	verbose bool
 }
 
@@ -25,12 +26,15 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir, out, tube, depends string) error {
+func (this *Client) put(cmd, mailto, workdir, out, tube string, pri int) error {
 	msg := make(map[string]string)
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
-	msg["depends"] = depends
 	msg["tube"] = tube
+	if tube == "" {
+		return errors.New("Missing required param -tube")
+	}
+	msg["pri"] = string(pri) // Not used except for debugging
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
 		return e
@@ -50,7 +54,7 @@ func (this *Client) put(cmd, mailto, workdir, out, tube, depends string) error {
 			return e
 		}
 	}
-	_, e = this.q.Put(0, 0, 60*60, message) // An hour TTR?
+	_, e = this.q.Put(pri, 0, 60*60, message) // An hour TTR?
 	return e
 }
 
