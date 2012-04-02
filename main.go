@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"log"
 	"os"
@@ -35,10 +36,31 @@ func main() {
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
-	} else if *help || len(flag.Args()) == 0 {
+	} else if *help {
 		flag.Usage()
 		os.Exit(1)
-	} else {
+	} else if len(flag.Args()) == 0 { // Queue up many jobs from STDIN
+		in := bufio.NewReaderSize(os.Stdin, 1024*1024)
+		c, e := NewClient(*verbose)
+		if e != nil {
+			log.Fatalf("ERROR: %s", e.Error())
+		}
+		input := make([]byte, 0)
+		for {
+			line, e := in.ReadSlice('\n')
+			if e != nil {
+				if e.Error() == "EOF" {
+					break
+				}
+				log.Fatalf("ERROR: %s", e.Error())
+			}
+			input = append(input, line...)
+		}
+		e = c.putMany(input)
+		if e != nil {
+			log.Fatalf("ERROR: %s", e.Error())
+		}
+	} else { // Queue up one job
 		c, e := NewClient(*verbose)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
@@ -48,6 +70,5 @@ func main() {
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
-		os.Exit(0)
 	}
 }

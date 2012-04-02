@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 type Client struct {
@@ -56,6 +57,33 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, pri int) error {
 	}
 	_, e = this.q.Put(pri, 0, 60*60, message) // An hour TTR?
 	return e
+}
+
+func (this *Client) putMany(input []byte) error {
+	jobs := make([]map[string]string, 0)
+	e := json.Unmarshal(input, &jobs)
+	if e != nil {
+		return e
+	}
+	for _, job := range jobs {
+		pri := 0
+		priorityStr, exists := job["pri"]
+		if exists {
+			pri, e = strconv.Atoi(priorityStr)
+			if e != nil {
+				return e
+			}
+		}
+		out, exists := job["out"]
+		if !exists {
+			out = "/dev/null"
+		}
+		e = this.put(job["cmd"], job["mailto"], job["workdir"], out, job["tube"], pri)
+		if e != nil {
+			return e
+		}
+	}
+	return nil
 }
 
 func (this *Client) stats() error {

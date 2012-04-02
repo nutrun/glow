@@ -80,7 +80,7 @@ listenerloop:
 
 // Log and email errors
 func (this *Listener) catch(msg map[string]string, e error) {
-	log.Print(e)
+	log.Printf("ERROR: %s\n", e.Error())
 	if Config.SmtpServerAddr == "" {
 		return
 	}
