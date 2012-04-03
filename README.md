@@ -6,6 +6,8 @@ Start beanstalkd:
 $ beanstalkd
 ```
 
+Start a listener:
+
 ```
 $ glow -listen -v
 ```
