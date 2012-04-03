@@ -31,9 +31,7 @@ $ glow -h
 Needs golang go1 or recent weekly. 
 
 ```
-$ go get github.com/nutrun/lentil
-
-$ go get git/grid/glow
+$ go get github.com/nutrun/lentil && go get git/grid/glow
 ```
 
 or, inside a $GOPATH
