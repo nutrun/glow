@@ -30,6 +30,7 @@ func (t Tubes) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
+// Sort tubes on ascending priority and descending job count
 func (t Tubes) Less(i, j int) bool {
 	if t[i].pri == t[j].pri {
 		return t[i].jobcnt > t[j].jobcnt
