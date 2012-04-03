@@ -32,8 +32,7 @@ Needs golang go1 or recent weekly.
 
 ```
 $ go get github.com/nutrun/lentil
-```
-```
+
 $ go get git/grid/glow
 ```
 
