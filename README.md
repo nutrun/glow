@@ -15,7 +15,7 @@ $ glow -listen -v
 Run a job:
 
 ```
-$ glow -out=$HOME/glow.out ls
+$ glow -v -out=$HOME/glow.out ls
 ```
 
 List what's available:
