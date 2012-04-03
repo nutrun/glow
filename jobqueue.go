@@ -74,6 +74,7 @@ func (this *JobQueue) Delete(id uint64) error {
 	return this.q.Delete(id)
 }
 
+// TODO We shouldn't refresh tubes if the list hasn't changed
 func (this *JobQueue) refreshTubes() error {
 	this.tubes = make([]*Tube, 0)
 	tubes, e := this.q.ListTubes()
