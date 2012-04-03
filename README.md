@@ -1,5 +1,7 @@
 # glow
 
+### RUNNING
+
 Start beanstalkd:
 
 ```
@@ -24,7 +26,7 @@ List what's available:
 $ glow -h
 ```
 
-## INSTALLATION
+### BUILDING
 
 Needs golang go1 or recent weekly. 
 
