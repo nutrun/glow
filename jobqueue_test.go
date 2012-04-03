@@ -31,6 +31,21 @@ func TestMoarPriorities(t *testing.T) {
 	assertNextJob(t, jobs, "job12")
 }
 
+func TestSamePriorityDifferentJobCount(t *testing.T) {
+	q := connect(t)
+	put(t, "job11", "tube1", 0, q)
+	put(t, "job12", "tube1", 0, q)
+	put(t, "job13", "tube1", 0, q)
+	put(t, "job21", "tube2", 0, q)
+	put(t, "job22", "tube2", 0, q)
+	jobs := NewJobQueue(q)
+	assertNextJob(t, jobs, "job11")
+	assertNextJob(t, jobs, "job21")
+	assertNextJob(t, jobs, "job12")
+	assertNextJob(t, jobs, "job22")
+	assertNextJob(t, jobs, "job13")
+}
+
 func assertNextJob(t *testing.T, jobqueue *JobQueue, expected string) {
 	jobinfo := make(map[string]string)
 	job, e := jobqueue.Next()

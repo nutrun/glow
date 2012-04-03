@@ -15,8 +15,9 @@ type JobQueue struct {
 }
 
 type Tube struct {
-	pri  int
-	name string
+	pri    int
+	jobcnt int
+	name   string
 }
 
 type Tubes []*Tube
@@ -30,6 +31,9 @@ func (t Tubes) Swap(i, j int) {
 }
 
 func (t Tubes) Less(i, j int) bool {
+	if t[i].pri == t[j].pri {
+		return t[i].jobcnt > t[j].jobcnt
+	}
 	return t[i].pri < t[j].pri
 }
 
@@ -90,17 +94,22 @@ func (this *JobQueue) refreshTubes() error {
 			}
 			return e
 		}
-		stats, e := this.q.StatsJob(job.Id)
+		jobstats, e := this.q.StatsJob(job.Id)
 		if e != nil {
 			return e
 		}
-		priority, _ := strconv.Atoi(stats["pri"])
-		delay, _ := strconv.Atoi(stats["delay"])
+		priority, _ := strconv.Atoi(jobstats["pri"])
+		delay, _ := strconv.Atoi(jobstats["delay"])
 		e = this.q.Release(job.Id, priority, delay)
 		if e != nil {
 			return e
 		}
-		this.tubes = append(this.tubes, &Tube{priority, tube})
+		tubestats, e := this.q.StatsTube(tube)
+		if e != nil {
+			return e
+		}
+		jobcnt, _ := strconv.Atoi(tubestats["current-jobs-ready"])
+		this.tubes = append(this.tubes, &Tube{priority, jobcnt, tube})
 		_, e = this.q.Ignore(tube)
 		if e != nil {
 			return e
