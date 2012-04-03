@@ -44,7 +44,7 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, pri int) error {
 	msg["out"] = out
 	message, e := json.Marshal(msg)
 	if this.verbose {
-		log.Printf("RUNNING: %s\n", message)
+		log.Printf("QUEUEING UP: %s\n", message)
 	}
 	if e != nil {
 		return e
