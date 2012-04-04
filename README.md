@@ -39,5 +39,5 @@ $ go get github.com/nutrun/lentil
 Inside a $GOPATH/src
 
 ```
-git clone git@git:grid/glow.git && cd glow && go install
+$ git clone git@git:grid/glow.git && cd glow && go install
 ```
