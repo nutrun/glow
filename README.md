@@ -28,13 +28,13 @@ $ glow -h
 
 ### BUILDING
 
-Needs golang go1 or recent weekly. 
+Needs golang go1 or recent weekly and https://github.com/nutrun/lentil 
 
 ```
-$ go get github.com/nutrun/lentil && go get git/grid/glow
+$ go get github.com/nutrun/lentil
 ```
 
-or, inside a $GOPATH
+Inside a $GOPATH/src
 
 ```
 git clone git@git:grid/glow.git && cd glow && go install
