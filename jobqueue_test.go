@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"lentil"
+	"github.com/nutrun/lentil"
 	"testing"
 )
 
