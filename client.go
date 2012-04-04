@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/nutrun/lentil"
 	"log"
-	"os"
 	"path/filepath"
 	"strconv"
 )
@@ -112,6 +111,6 @@ func (this *Client) stats() error {
 	if e != nil {
 		return e
 	}
-	fmt.Fprintf(os.Stderr, "%s\n", statsjson)
+	fmt.Println("%s\n", statsjson)
 	return nil
 }
