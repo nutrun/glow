@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"lentil"
+	"github.com/nutrun/lentil"
 	"log"
 	"net/smtp"
 	"os"

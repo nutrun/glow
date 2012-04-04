@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"lentil"
+	"github.com/nutrun/lentil"
 	"log"
 	"os"
 	"path/filepath"

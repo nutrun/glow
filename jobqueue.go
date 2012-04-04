@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"lentil"
+	"github.com/nutrun/lentil"
 	"sort"
 	"strconv"
 	"strings"
