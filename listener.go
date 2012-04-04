@@ -69,7 +69,14 @@ listenerloop:
 		if e != nil {
 			this.catch(msg, e)
 		}
-		jobqueue.Delete(job.Id)
+		e = jobqueue.Delete(job.Id)
+		if e != nil {
+			this.catch(msg, e)
+		}
+		e = os.RemoveAll(msg["workdir"])
+		if e != nil {
+			this.catch(msg, e)
+		}
 		if len(out) > 0 {
 			e = ioutil.WriteFile(msg["out"], out, 0644)
 			if e != nil {
