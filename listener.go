@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"github.com/nutrun/lentil"
+	"io/ioutil"
 	"log"
 	"net/smtp"
 	"os"
@@ -54,12 +54,13 @@ listenerloop:
 		}
 		msg := make(map[string]string)
 		json.Unmarshal([]byte(job.Body), &msg)
-		e = os.Chdir(msg["workdir"])
+		e = os.MkdirAll(msg["workdir"], os.ModePerm)
 		if e != nil {
 			this.catch(msg, e)
 			jobqueue.Delete(job.Id)
 			goto listenerloop
 		}
+		os.Chdir(msg["workdir"])
 		messagetokens := strings.Split(msg["cmd"], " ")
 		command := messagetokens[0]
 		args := messagetokens[1:len(messagetokens)]
