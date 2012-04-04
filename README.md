@@ -1,5 +1,7 @@
 # glow
 
+Distributed job scheduling via [beankstalkd](http://kr.github.com/beanstalkd/)
+
 ### RUNNING
 
 Start beanstalkd:
@@ -28,7 +30,7 @@ $ glow -h
 
 ### BUILDING
 
-Needs golang go1 or recent weekly and https://github.com/nutrun/lentil 
+Needs golang go1 or recent weekly and [lentil](https://github.com/nutrun/lentil )
 
 ```
 $ go get github.com/nutrun/lentil
