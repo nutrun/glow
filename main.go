@@ -17,6 +17,7 @@ var tube *string = flag.String("tube", "", "Beanstalkd tube to send the job to")
 var stats *bool = flag.Bool("stats", false, "Show queue stats")
 var verbose *bool = flag.Bool("v", false, "Increase verbosity")
 var pri *int = flag.Int("pri", 0, "Job/tube priority (smaller runs first)")
+var delay *int = flag.Int("delay", 0, "Job delay in seconds")
 
 func main() {
 	flag.Parse()
@@ -66,7 +67,7 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 		cmd := strings.Join(flag.Args(), " ")
-		e = c.put(cmd, *mailto, *workdir, *out, *tube, *pri)
+		e = c.put(cmd, *mailto, *workdir, *out, *tube, *pri, *delay)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}

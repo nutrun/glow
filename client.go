@@ -27,7 +27,7 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir, out, tube string, pri int) error {
+func (this *Client) put(cmd, mailto, workdir, out, tube string, pri, delay int) error {
 	msg := make(map[string]string)
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
@@ -35,7 +35,8 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, pri int) error {
 	if tube == "" {
 		return errors.New("Missing required param -tube")
 	}
-	msg["pri"] = string(pri) // Not used except for debugging
+	msg["pri"] = string(pri)     // Not used except for debugging
+	msg["delay"] = string(delay) // Not used except for debugging
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
 		return e
@@ -55,7 +56,7 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, pri int) error {
 			return e
 		}
 	}
-	_, e = this.q.Put(pri, 0, 60*60, message) // An hour TTR?
+	_, e = this.q.Put(pri, delay, 60*60, message) // An hour TTR?
 	return e
 }
 
@@ -74,11 +75,19 @@ func (this *Client) putMany(input []byte) error {
 				return e
 			}
 		}
+		delay := 0
+		delayStr, exists := job["delay"]
+		if exists {
+			delay, e = strconv.Atoi(delayStr)
+			if e != nil {
+				return e
+			}
+		}
 		out, exists := job["out"]
 		if !exists {
 			out = "/dev/null"
 		}
-		e = this.put(job["cmd"], job["mailto"], job["workdir"], out, job["tube"], pri)
+		e = this.put(job["cmd"], job["mailto"], job["workdir"], out, job["tube"], pri, delay)
 		if e != nil {
 			return e
 		}
