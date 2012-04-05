@@ -41,3 +41,11 @@ Inside a $GOPATH/src
 ```
 $ git clone git@git:grid/glow.git && cd glow && go install
 ```
+
+### Supermegamicrooptimization
+
+For improved queueing performance, a json list of jobs can be piped to glow's stdin: 
+
+```
+echo '[{"cmd":"ls","pri":"0","tube":"foo","delay":"0","mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"},{"cmd":"ps","pri":"1","tube":"bar","delay":"0","mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"}]' | glow
+```
