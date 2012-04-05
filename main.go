@@ -11,7 +11,7 @@ import (
 var listener *bool = flag.Bool("listen", false, "Start listener")
 var help *bool = flag.Bool("help", false, "Show help")
 var mailto *string = flag.String("mailto", "", "Who to email on failure (comma separated)")
-var workdir *string = flag.String("workdir", "", "Directory to run job from")
+var workdir *string = flag.String("workdir", "/tmp", "Directory to run job from")
 var out *string = flag.String("out", "/dev/null", "File to send job's stdout and stderr")
 var tube *string = flag.String("tube", "", "Beanstalkd tube to send the job to")
 var stats *bool = flag.Bool("stats", false, "Show queue stats")
