@@ -34,9 +34,9 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, major, minor, de
 	if tube == "" {
 		return errors.New("Missing required param -tube")
 	}
-	msg["major"] = string(major) // Not used except for debugging
-	msg["minor"] = string(minor) // Not used except for debugging
-	msg["delay"] = string(delay) // Not used except for debugging
+	msg["major"] = fmt.Sprintf("%s", major) // Not used except for debugging
+	msg["minor"] = fmt.Sprintf("%s", minor) // Not used except for debugging
+	msg["delay"] = fmt.Sprintf("%s", delay) // Not used except for debugging
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
 		return e
