@@ -120,6 +120,6 @@ func (this *Client) stats() error {
 	if e != nil {
 		return e
 	}
-	fmt.Println("%s\n", statsjson)
+	fmt.Printf("%s\n", statsjson)
 	return nil
 }
