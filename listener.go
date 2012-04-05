@@ -13,6 +13,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+    "errors"
 )
 
 type Listener struct {
@@ -56,13 +57,24 @@ listenerloop:
 		}
 		msg := make(map[string]string)
 		json.Unmarshal([]byte(job.Body), &msg)
-		e = os.MkdirAll(msg["workdir"], os.ModePerm)
+        log.Printf("msg[workdir] %v", msg["workdir"])
+        workdir := msg["workdir"]
+        if workdir == "" {
+            workdir = os.TempDir()
+        } else {
+             if _, err := os.Stat(workdir); err == nil {
+                this.catch(msg, errors.New(fmt.Sprintf("Stat [%v] did not return any error. Directory already exists.", workdir)))
+                goto listenerloop
+            }
+        }
+        log.Printf("Using workdir %v", workdir)
+		e = os.MkdirAll(workdir, os.ModePerm)
 		if e != nil {
 			this.catch(msg, e)
 			jobqueue.Delete(job.Id)
 			goto listenerloop
 		}
-		os.Chdir(msg["workdir"])
+		os.Chdir(workdir)
 		messagetokens := strings.Split(msg["cmd"], " ")
 		command := messagetokens[0]
 		args := messagetokens[1:len(messagetokens)]
@@ -75,7 +87,7 @@ listenerloop:
 		if e != nil {
 			this.catch(msg, e)
 		}
-		e = os.RemoveAll(msg["workdir"])
+		e = os.RemoveAll(workdir)
 		if e != nil {
 			this.catch(msg, e)
 		}
