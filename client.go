@@ -26,7 +26,7 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir, out, tube string, pri, delay int) error {
+func (this *Client) put(cmd, mailto, workdir, out, tube string, major, minor, delay int) error {
 	msg := make(map[string]string)
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
@@ -34,7 +34,8 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, pri, delay int) 
 	if tube == "" {
 		return errors.New("Missing required param -tube")
 	}
-	msg["pri"] = string(pri)     // Not used except for debugging
+	msg["major"] = string(major) // Not used except for debugging
+	msg["minor"] = string(minor) // Not used except for debugging
 	msg["delay"] = string(delay) // Not used except for debugging
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
@@ -55,7 +56,7 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, pri, delay int) 
 			return e
 		}
 	}
-	_, e = this.q.Put(pri, delay, 60*60, message) // An hour TTR?
+	_, e = this.q.Put(int((major<<16)|minor), delay, 60*60, message) // An hour TTR?
 	return e
 }
 
@@ -66,10 +67,18 @@ func (this *Client) putMany(input []byte) error {
 		return e
 	}
 	for _, job := range jobs {
-		pri := 0
-		priorityStr, exists := job["pri"]
+		major := 0
+		majorStr, exists := job["major"]
 		if exists {
-			pri, e = strconv.Atoi(priorityStr)
+			major, e = strconv.Atoi(majorStr)
+			if e != nil {
+				return e
+			}
+		}
+		minor := 0
+		minorStr, exists := job["minor"]
+		if exists {
+			minor, e = strconv.Atoi(minorStr)
 			if e != nil {
 				return e
 			}
@@ -86,7 +95,7 @@ func (this *Client) putMany(input []byte) error {
 		if !exists {
 			out = "/dev/null"
 		}
-		e = this.put(job["cmd"], job["mailto"], job["workdir"], out, job["tube"], pri, delay)
+		e = this.put(job["cmd"], job["mailto"], job["workdir"], out, job["tube"], major, minor, delay)
 		if e != nil {
 			return e
 		}

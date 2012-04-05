@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 )
 
 type Listener struct {
@@ -45,6 +46,7 @@ listenerloop:
 		job, e := jobqueue.Next()
 		if e != nil {
 			if strings.Contains(e.Error(), "TIMED_OUT") {
+				time.Sleep(time.Second)
 				goto listenerloop
 			}
 			log.Fatal(e)

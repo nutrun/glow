@@ -15,9 +15,10 @@ type JobQueue struct {
 }
 
 type Tube struct {
-	pri    int
-	jobcnt int
-	name   string
+	majorPriority uint
+	minorPriority uint
+	jobcnt        int
+	name          string
 }
 
 type Tubes []*Tube
@@ -32,10 +33,24 @@ func (t Tubes) Swap(i, j int) {
 
 // Sort tubes on ascending priority and descending job count
 func (t Tubes) Less(i, j int) bool {
-	if t[i].pri == t[j].pri {
+	if t[i].majorPriority != t[j].majorPriority {
+		return t[i].majorPriority < t[j].majorPriority
+	}
+	if t[i].minorPriority == t[j].minorPriority {
 		return t[i].jobcnt > t[j].jobcnt
 	}
-	return t[i].pri < t[j].pri
+	return t[i].minorPriority < t[j].minorPriority
+}
+
+func (this Tubes) Trim() Tubes {
+	sort.Sort(this)
+	for i := 0; i < this.Len(); i++ {
+		if this[0].majorPriority != this[i].majorPriority {
+			return this[0:i]
+
+		}
+	}
+	return this
 }
 
 func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
@@ -54,20 +69,30 @@ func (this *JobQueue) Next() (*lentil.Job, error) {
 		time.Sleep(time.Second)
 		return nil, errors.New("TIMED_OUT")
 	}
-	_, e = this.q.Watch(this.tubes[0].name)
-	if e != nil {
-		return nil, e
+	for _, tube := range this.tubes {
+		_, e = this.q.Watch(tube.name)
+		if e != nil {
+			return nil, e
+		}
+		// Timeout every 1 second to handle kill signals
+		job, e := this.q.ReserveWithTimeout(1)
+		if e != nil {
+			_, e = this.q.Ignore(tube.name)
+			if e != nil {
+				return nil, e
+			}
+			if tube.jobcnt > 0 {
+				return nil, errors.New("TIMED_OUT")
+			}
+			continue
+		}
+		_, e = this.q.Ignore(tube.name)
+		if e != nil {
+			return nil, e
+		}
+		return job, nil
 	}
-	// Timeout every 1 second to handle kill signals
-	job, e := this.q.ReserveWithTimeout(1)
-	if e != nil {
-		return nil, e
-	}
-	_, e = this.q.Ignore(this.tubes[0].name)
-	if e != nil {
-		return nil, e
-	}
-	return job, nil
+	return nil, errors.New("TIMED_OUT")
 }
 
 func (this *JobQueue) Delete(id uint64) error {
@@ -101,6 +126,8 @@ func (this *JobQueue) refreshTubes() error {
 			return e
 		}
 		priority, _ := strconv.Atoi(jobstats["pri"])
+		major := uint(priority >> 16)
+		minor := uint(priority & 0x0000FFFF)
 		delay, _ := strconv.Atoi(jobstats["delay"])
 		e = this.q.Release(job.Id, priority, delay)
 		if e != nil {
@@ -110,13 +137,14 @@ func (this *JobQueue) refreshTubes() error {
 		if e != nil {
 			return e
 		}
-		jobcnt, _ := strconv.Atoi(tubestats["current-jobs-ready"])
-		this.tubes = append(this.tubes, &Tube{priority, jobcnt, tube})
+		ready, _ := strconv.Atoi(tubestats["current-jobs-ready"])
+		reserved, _ := strconv.Atoi(tubestats["current-jobs-reserved"])
+		this.tubes = append(this.tubes, &Tube{major, minor, ready + reserved, tube})
 		_, e = this.q.Ignore(tube)
 		if e != nil {
 			return e
 		}
 	}
-	sort.Sort(this.tubes)
+	this.tubes = this.tubes.Trim()
 	return nil
 }

@@ -6,22 +6,33 @@ import (
 	"testing"
 )
 
+func TestTrim(t *testing.T) {
+	tubes := make(Tubes, 3)
+	tubes[0] = &Tube{1, 2, 10, "one"}
+	tubes[1] = &Tube{0, 3, 10, "two"}
+	tubes[2] = &Tube{0, 2, 10, "three"}
+	tubes = tubes.Trim()
+	if tubes.Len() != 2 {
+		t.Errorf("Trim failed to remove tubes, the number of tubes is [%v]", tubes.Len())
+	}
+}
+
 func TestPriority(t *testing.T) {
 	q := connect(t)
-	put(t, "job1", "tube1", 2, q)
-	put(t, "job2", "tube2", 0, q)
+	put(t, "job1", "tube1", 2, 0, q)
+	put(t, "job2", "tube2", 0, 0, q)
 	jobs := NewJobQueue(q)
 	assertNextJob(t, jobs, "job2")
 }
 
 func TestMoarPriorities(t *testing.T) {
 	q := connect(t)
-	put(t, "job11", "tube1", 3, q)
-	put(t, "job21", "tube2", 1, q)
-	put(t, "job31", "tube3", 2, q)
-	put(t, "job22", "tube2", 1, q)
-	put(t, "job32", "tube3", 2, q)
-	put(t, "job12", "tube1", 3, q)
+	put(t, "job11", "tube1", 3, 0, q)
+	put(t, "job21", "tube2", 1, 0, q)
+	put(t, "job31", "tube3", 2, 0, q)
+	put(t, "job22", "tube2", 1, 0, q)
+	put(t, "job32", "tube3", 2, 0, q)
+	put(t, "job12", "tube1", 3, 0, q)
 	jobs := NewJobQueue(q)
 	assertNextJob(t, jobs, "job21")
 	assertNextJob(t, jobs, "job22")
@@ -31,13 +42,26 @@ func TestMoarPriorities(t *testing.T) {
 	assertNextJob(t, jobs, "job12")
 }
 
+func TestMinorPrioraties(t *testing.T) {
+	q := connect(t)
+	put(t, "job11", "tube1", 0, 1, q)
+	put(t, "job21", "tube2", 0, 0, q)
+	put(t, "job22", "tube2", 0, 0, q)
+	put(t, "job12", "tube1", 0, 1, q)
+	jobs := NewJobQueue(q)
+	assertNextJob(t, jobs, "job21")
+	assertNextJob(t, jobs, "job22")
+	assertNextJob(t, jobs, "job11")
+	assertNextJob(t, jobs, "job12")
+}
+
 func TestSamePriorityDifferentJobCount(t *testing.T) {
 	q := connect(t)
-	put(t, "job11", "tube1", 0, q)
-	put(t, "job12", "tube1", 0, q)
-	put(t, "job13", "tube1", 0, q)
-	put(t, "job21", "tube2", 0, q)
-	put(t, "job22", "tube2", 0, q)
+	put(t, "job11", "tube1", 0, 0, q)
+	put(t, "job12", "tube1", 0, 0, q)
+	put(t, "job13", "tube1", 0, 0, q)
+	put(t, "job21", "tube2", 0, 0, q)
+	put(t, "job22", "tube2", 0, 0, q)
 	jobs := NewJobQueue(q)
 	assertNextJob(t, jobs, "job11")
 	assertNextJob(t, jobs, "job21")
@@ -60,7 +84,7 @@ func assertNextJob(t *testing.T, jobqueue *JobQueue, expected string) {
 	jobqueue.Delete(job.Id)
 }
 
-func put(t *testing.T, jobName, tube string, pri int, q *lentil.Beanstalkd) {
+func put(t *testing.T, jobName, tube string, major, minor uint, q *lentil.Beanstalkd) {
 	job := make(map[string]string)
 	job["tube"] = tube
 	job["name"] = jobName
@@ -69,7 +93,7 @@ func put(t *testing.T, jobName, tube string, pri int, q *lentil.Beanstalkd) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	_, e = q.Put(pri, 0, 60, jobjson)
+	_, e = q.Put(int((major<<16)|(minor)), 0, 60, jobjson)
 	if e != nil {
 		t.Error(e)
 	}
