@@ -95,7 +95,12 @@ func (this *Client) putMany(input []byte) error {
 		if !exists {
 			out = "/dev/null"
 		}
-		e = this.put(job["cmd"], job["mailto"], job["workdir"], out, job["tube"], major, minor, delay)
+		workdir := "/tmp"
+		dir, exists := job["workdir"]
+		if exists {
+			workdir = dir
+		}
+		e = this.put(job["cmd"], job["mailto"], workdir, out, job["tube"], major, minor, delay)
 		if e != nil {
 			return e
 		}
