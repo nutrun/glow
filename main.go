@@ -16,7 +16,7 @@ var out *string = flag.String("out", "/dev/null", "File to send job's stdout and
 var tube *string = flag.String("tube", "", "Beanstalkd tube to send the job to")
 var stats *bool = flag.Bool("stats", false, "Show queue stats")
 var verbose *bool = flag.Bool("v", false, "Increase verbosity")
-var major *int = flag.Int("major", 0, "Major tube priority (smaller runs first)")
+var major *int = flag.Int("major", 0, "Major job/tube priority (smaller runs first)")
 var minor *int = flag.Int("minor", 0, "Minor job/tube priority (smaller runs first)")
 var delay *int = flag.Int("delay", 0, "Job delay in seconds")
 
