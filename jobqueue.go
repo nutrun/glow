@@ -42,7 +42,7 @@ func (t Tubes) Less(i, j int) bool {
 	return t[i].minorPriority < t[j].minorPriority
 }
 
-func (this Tubes) Trim() Tubes {
+func (this Tubes) TrimMajor() Tubes {
 	sort.Sort(this)
 	for i := 0; i < this.Len(); i++ {
 		if this[0].majorPriority != this[i].majorPriority {
@@ -51,6 +51,21 @@ func (this Tubes) Trim() Tubes {
 		}
 	}
 	return this
+}
+
+func (this Tubes) TrimMinor() Tubes {
+	tubes := make(Tubes, 0)
+	for i := 0; i < this.Len(); i++ {
+		if this[i].jobcnt > 0 {
+			if tubes.Len() > 0 {
+				if tubes[0].minorPriority < this[i].minorPriority {
+					return tubes
+				}
+			}
+			tubes = append(tubes, this[i])
+		}
+	}
+	return tubes
 }
 
 func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
@@ -101,7 +116,7 @@ func (this *JobQueue) Delete(id uint64) error {
 
 // TODO We shouldn't refresh tubes if the list hasn't changed
 func (this *JobQueue) refreshTubes() error {
-	this.tubes = make([]*Tube, 0)
+	this.tubes = make(Tubes, 0)
 	tubes, e := this.q.ListTubes()
 	if e != nil {
 		return e
@@ -145,6 +160,7 @@ func (this *JobQueue) refreshTubes() error {
 			return e
 		}
 	}
-	this.tubes = this.tubes.Trim()
+	this.tubes = this.tubes.TrimMajor()
+	this.tubes = this.tubes.TrimMinor()
 	return nil
 }

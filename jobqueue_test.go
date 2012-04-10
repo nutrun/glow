@@ -11,7 +11,7 @@ func TestTrim(t *testing.T) {
 	tubes[0] = &Tube{1, 2, 10, "one"}
 	tubes[1] = &Tube{0, 3, 10, "two"}
 	tubes[2] = &Tube{0, 2, 10, "three"}
-	tubes = tubes.Trim()
+	tubes = tubes.TrimMajor()
 	if tubes.Len() != 2 {
 		t.Errorf("Trim failed to remove tubes, the number of tubes is [%v]", tubes.Len())
 	}
