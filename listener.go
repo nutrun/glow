@@ -56,13 +56,13 @@ listenerloop:
 		}
 		msg := make(map[string]string)
 		json.Unmarshal([]byte(job.Body), &msg)
-		e = os.MkdirAll(msg["workdir"], os.ModePerm)
+		workdir := msg["workdir"]
+		e = os.Chdir(workdir)
 		if e != nil {
 			this.catch(msg, e)
 			jobqueue.Delete(job.Id)
 			goto listenerloop
 		}
-		os.Chdir(msg["workdir"])
 		messagetokens := strings.Split(msg["cmd"], " ")
 		command := messagetokens[0]
 		args := messagetokens[1:len(messagetokens)]
@@ -72,10 +72,6 @@ listenerloop:
 			this.catch(msg, e)
 		}
 		e = jobqueue.Delete(job.Id)
-		if e != nil {
-			this.catch(msg, e)
-		}
-		e = os.RemoveAll(msg["workdir"])
 		if e != nil {
 			this.catch(msg, e)
 		}

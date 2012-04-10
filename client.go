@@ -34,9 +34,9 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, major, minor, de
 	if tube == "" {
 		return errors.New("Missing required param -tube")
 	}
-	msg["major"] = string(major) // Not used except for debugging
-	msg["minor"] = string(minor) // Not used except for debugging
-	msg["delay"] = string(delay) // Not used except for debugging
+	msg["major"] = fmt.Sprintf("%d", major) // Not used except for debugging
+	msg["minor"] = fmt.Sprintf("%d", minor) // Not used except for debugging
+	msg["delay"] = fmt.Sprintf("%d", delay) // Not used except for debugging
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
 		return e
@@ -95,7 +95,12 @@ func (this *Client) putMany(input []byte) error {
 		if !exists {
 			out = "/dev/null"
 		}
-		e = this.put(job["cmd"], job["mailto"], job["workdir"], out, job["tube"], major, minor, delay)
+		workdir := "/tmp"
+		dir, exists := job["workdir"]
+		if exists {
+			workdir = dir
+		}
+		e = this.put(job["cmd"], job["mailto"], workdir, out, job["tube"], major, minor, delay)
 		if e != nil {
 			return e
 		}
