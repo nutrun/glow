@@ -114,6 +114,15 @@ func (this *JobQueue) Delete(id uint64) error {
 	return this.q.Delete(id)
 }
 
+func (this *JobQueue) priority(tube string) (uint, uint, error) {
+	index := strings.LastIndex(tube, "_")
+	priority, err := strconv.Atoi(tube[index+1:])
+	if err != nil {
+		return 0, 0, err
+	}
+	return uint(priority >> 16), uint(priority & 0x0000FFFF), nil
+}
+
 // TODO We shouldn't refresh tubes if the list hasn't changed
 func (this *JobQueue) refreshTubes() error {
 	this.tubes = make(Tubes, 0)
@@ -125,28 +134,9 @@ func (this *JobQueue) refreshTubes() error {
 		if tube == "default" {
 			continue
 		}
-		_, e := this.q.Watch(tube)
+		major, minor, e := this.priority(tube)
 		if e != nil {
-			return e
-		}
-		job, e := this.q.ReserveWithTimeout(0)
-		if e != nil {
-			if strings.Contains(e.Error(), "TIMED_OUT") {
-				continue
-			}
-			return e
-		}
-		jobstats, e := this.q.StatsJob(job.Id)
-		if e != nil {
-			return e
-		}
-		priority, _ := strconv.Atoi(jobstats["pri"])
-		major := uint(priority >> 16)
-		minor := uint(priority & 0x0000FFFF)
-		delay, _ := strconv.Atoi(jobstats["delay"])
-		e = this.q.Release(job.Id, priority, delay)
-		if e != nil {
-			return e
+			continue
 		}
 		tubestats, e := this.q.StatsTube(tube)
 		if e != nil {
@@ -154,10 +144,9 @@ func (this *JobQueue) refreshTubes() error {
 		}
 		ready, _ := strconv.Atoi(tubestats["current-jobs-ready"])
 		reserved, _ := strconv.Atoi(tubestats["current-jobs-reserved"])
-		this.tubes = append(this.tubes, &Tube{major, minor, ready + reserved, tube})
-		_, e = this.q.Ignore(tube)
-		if e != nil {
-			return e
+		delayed, _ := strconv.Atoi(tubestats["current-jobs-delayed"])
+		if ready+reserved+delayed > 0 {
+			this.tubes = append(this.tubes, &Tube{major, minor, ready + reserved, tube})
 		}
 	}
 	this.tubes = this.tubes.TrimMajor()

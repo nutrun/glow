@@ -51,7 +51,7 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, major, minor, de
 		return e
 	}
 	if tube != "default" {
-		e = this.q.Use(tube)
+		e = this.q.Use(fmt.Sprintf("%s_%d", tube, int((major<<16)|minor)))
 		if e != nil {
 			return e
 		}

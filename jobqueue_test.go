@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/nutrun/lentil"
 	"testing"
 )
@@ -19,20 +20,21 @@ func TestTrim(t *testing.T) {
 
 func TestPriority(t *testing.T) {
 	q := connect(t)
-	put(t, "job1", "tube1", 2, 0, q)
-	put(t, "job2", "tube2", 0, 0, q)
+	put(t, "job1", "tube1", 2, 0, 0, q)
+	put(t, "job2", "tube2", 0, 0, 0, q)
 	jobs := NewJobQueue(q)
 	assertNextJob(t, jobs, "job2")
+	assertNextJob(t, jobs, "job1")
 }
 
 func TestMoarPriorities(t *testing.T) {
 	q := connect(t)
-	put(t, "job11", "tube1", 3, 0, q)
-	put(t, "job21", "tube2", 1, 0, q)
-	put(t, "job31", "tube3", 2, 0, q)
-	put(t, "job22", "tube2", 1, 0, q)
-	put(t, "job32", "tube3", 2, 0, q)
-	put(t, "job12", "tube1", 3, 0, q)
+	put(t, "job11", "tube1", 3, 0, 0, q)
+	put(t, "job21", "tube2", 1, 0, 0, q)
+	put(t, "job31", "tube3", 2, 0, 0, q)
+	put(t, "job22", "tube2", 1, 0, 0, q)
+	put(t, "job32", "tube3", 2, 0, 0, q)
+	put(t, "job12", "tube1", 3, 0, 0, q)
 	jobs := NewJobQueue(q)
 	assertNextJob(t, jobs, "job21")
 	assertNextJob(t, jobs, "job22")
@@ -44,10 +46,10 @@ func TestMoarPriorities(t *testing.T) {
 
 func TestMinorPrioraties(t *testing.T) {
 	q := connect(t)
-	put(t, "job11", "tube1", 0, 1, q)
-	put(t, "job21", "tube2", 0, 0, q)
-	put(t, "job22", "tube2", 0, 0, q)
-	put(t, "job12", "tube1", 0, 1, q)
+	put(t, "job11", "tube1", 0, 1, 0, q)
+	put(t, "job21", "tube2", 0, 0, 0, q)
+	put(t, "job22", "tube2", 0, 0, 0, q)
+	put(t, "job12", "tube1", 0, 1, 0, q)
 	jobs := NewJobQueue(q)
 	assertNextJob(t, jobs, "job21")
 	assertNextJob(t, jobs, "job22")
@@ -55,26 +57,39 @@ func TestMinorPrioraties(t *testing.T) {
 	assertNextJob(t, jobs, "job12")
 }
 
-func TestSamePriorityDifferentJobCount(t *testing.T) {
+func TestMajoarWorkingPrioraties(t *testing.T) {
 	q := connect(t)
-	put(t, "job11", "tube1", 0, 0, q)
-	put(t, "job12", "tube1", 0, 0, q)
-	put(t, "job13", "tube1", 0, 0, q)
-	put(t, "job21", "tube2", 0, 0, q)
-	put(t, "job22", "tube2", 0, 0, q)
+	put(t, "job11", "tube1", 0, 1, 0, q)
+	put(t, "job21", "tube2", 0, 0, 0, q)
+	put(t, "job22", "tube2", 0, 0, 0, q)
+	put(t, "job12", "tube1", 0, 1, 0, q)
 	jobs := NewJobQueue(q)
+	job21, err := reserveNextJob(t, jobs, "job21")
+	if err != nil {
+		t.Error(fmt.Sprintf("Could not resere job21 [%v]", err))
+	}
+	job22, err := reserveNextJob(t, jobs, "job22")
+	if err != nil {
+		t.Error(fmt.Sprintf("Could not resere job22 [%v]", err))
+	}
+	no_job, err := reserveNextJob(t, jobs, "job11")
+	if no_job != nil {
+		t.Error(fmt.Sprintf("Reserved %v when should not have", no_job))
+	}
+	if err == nil {
+		t.Error(fmt.Sprintf("Should have thrown a TIME_OUT, threw  %v instead", err))
+	}
+	jobs.Delete(job21.Id)
+	jobs.Delete(job22.Id)
 	assertNextJob(t, jobs, "job11")
-	assertNextJob(t, jobs, "job21")
 	assertNextJob(t, jobs, "job12")
-	assertNextJob(t, jobs, "job22")
-	assertNextJob(t, jobs, "job13")
 }
 
 func assertNextJob(t *testing.T, jobqueue *JobQueue, expected string) {
 	jobinfo := make(map[string]string)
 	job, e := jobqueue.Next()
 	if e != nil {
-		t.Error(e)
+		t.Error(fmt.Sprintf("%v on [%v]", e, expected))
 		return
 	}
 	json.Unmarshal(job.Body, &jobinfo)
@@ -84,16 +99,24 @@ func assertNextJob(t *testing.T, jobqueue *JobQueue, expected string) {
 	jobqueue.Delete(job.Id)
 }
 
-func put(t *testing.T, jobName, tube string, major, minor uint, q *lentil.Beanstalkd) {
+func reserveNextJob(t *testing.T, jobqueue *JobQueue, expected string) (*lentil.Job, error) {
+	job, e := jobqueue.Next()
+	if e != nil {
+		return nil, e
+	}
+	return job, e
+}
+
+func put(t *testing.T, jobName, tube string, major, minor uint, delay int, q *lentil.Beanstalkd) {
 	job := make(map[string]string)
 	job["tube"] = tube
 	job["name"] = jobName
 	jobjson, _ := json.Marshal(job)
-	e := q.Use(tube)
+	e := q.Use(fmt.Sprintf("%s_%d", tube, int((major<<16)|minor)))
 	if e != nil {
 		t.Fatal(e)
 	}
-	_, e = q.Put(int((major<<16)|(minor)), 0, 60, jobjson)
+	_, e = q.Put(int((major<<16)|(minor)), delay, 60, jobjson)
 	if e != nil {
 		t.Error(e)
 	}
