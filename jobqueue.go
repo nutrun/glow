@@ -11,7 +11,8 @@ import (
 
 type JobQueue struct {
 	q     *lentil.Beanstalkd
-	tubes Tubes
+	major Tubes
+	minor Tubes
 }
 
 type Tube struct {
@@ -31,6 +32,14 @@ func (t Tubes) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
+func (this Tubes) Jobs() int {
+	jobs := 0
+	for _, tube := range this {
+		jobs += tube.jobcnt
+	}
+	return jobs
+}
+
 // Sort tubes on ascending priority and descending job count
 func (t Tubes) Less(i, j int) bool {
 	if t[i].majorPriority != t[j].majorPriority {
@@ -42,30 +51,27 @@ func (t Tubes) Less(i, j int) bool {
 	return t[i].minorPriority < t[j].minorPriority
 }
 
-func (this Tubes) TrimMajor() Tubes {
+func (this Tubes) FirstMajor() Tubes {
 	sort.Sort(this)
 	for i := 0; i < this.Len(); i++ {
-		if this[0].majorPriority != this[i].majorPriority {
+		if this[0].majorPriority != this[i].majorPriority || this[0].minorPriority != this[i].minorPriority {
 			return this[0:i]
-
 		}
 	}
 	return this
 }
 
-func (this Tubes) TrimMinor() Tubes {
-	tubes := make(Tubes, 0)
+func (this Tubes) FirstMinor() Tubes {
+	index := 1
 	for i := 0; i < this.Len(); i++ {
-		if this[i].jobcnt > 0 {
-			if tubes.Len() > 0 {
-				if tubes[0].minorPriority < this[i].minorPriority {
-					return tubes
-				}
-			}
-			tubes = append(tubes, this[i])
+		if this[0].minorPriority != this[i].minorPriority {
+			index = i
+		}
+		if this[0].majorPriority != this[i].majorPriority {
+			return this[index-1 : i]
 		}
 	}
-	return tubes
+	return this[index:]
 }
 
 func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
@@ -74,40 +80,56 @@ func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
 	return this
 }
 
+func (this *JobQueue) ReserveFromTubes(tubes Tubes) (*lentil.Job, error) {
+	watched := make(Tubes, 0)
+	for _, tube := range tubes {
+		_, e := this.q.Watch(tube.name)
+		if e != nil {
+			return nil, e
+		}
+		watched := append(watched, tube)
+		job, res_err := this.q.ReserveWithTimeout(1)
+		for _, ignored := range watched {
+			_, e = this.q.Ignore(ignored.name)
+			if e != nil {
+				return nil, e
+			}
+		}
+		if res_err != nil {
+			if tubes.Jobs() > 0 {
+				return nil, res_err
+			}
+			return nil, nil
+		}
+		return job, nil
+	}
+	return nil, nil
+}
+
 func (this *JobQueue) Next() (*lentil.Job, error) {
 	e := this.refreshTubes()
 	if e != nil {
 		return nil, e
 	}
 	// Keep on timing out until there's jobs (we don't watch "default")
-	if len(this.tubes) == 0 {
+	if len(this.major) == 0 && len(this.minor) == 0 {
 		time.Sleep(time.Second)
 		return nil, errors.New("TIMED_OUT")
 	}
-	for _, tube := range this.tubes {
-		_, e = this.q.Watch(tube.name)
-		if e != nil {
-			return nil, e
-		}
-		// Timeout every 1 second to handle kill signals
-		job, e := this.q.ReserveWithTimeout(1)
-		if e != nil {
-			_, e = this.q.Ignore(tube.name)
-			if e != nil {
-				return nil, e
-			}
-			if tube.jobcnt > 0 {
-				return nil, errors.New("TIMED_OUT")
-			}
-			continue
-		}
-		_, e = this.q.Ignore(tube.name)
-		if e != nil {
-			return nil, e
-		}
-		return job, nil
+	job, e := this.ReserveFromTubes(this.major)
+	if e != nil {
+		return nil, e
 	}
-	return nil, errors.New("TIMED_OUT")
+	if job == nil {
+		job, e = this.ReserveFromTubes(this.minor)
+		if e != nil {
+			return nil, e
+		}
+		if job != nil {
+			return job, nil
+		}
+	}
+	return job, nil
 }
 
 func (this *JobQueue) Delete(id uint64) error {
@@ -125,12 +147,12 @@ func (this *JobQueue) priority(tube string) (uint, uint, error) {
 
 // TODO We shouldn't refresh tubes if the list hasn't changed
 func (this *JobQueue) refreshTubes() error {
-	this.tubes = make(Tubes, 0)
-	tubes, e := this.q.ListTubes()
+	tubes := make(Tubes, 0)
+	names, e := this.q.ListTubes()
 	if e != nil {
 		return e
 	}
-	for _, tube := range tubes {
+	for _, tube := range names {
 		if tube == "default" {
 			continue
 		}
@@ -146,10 +168,10 @@ func (this *JobQueue) refreshTubes() error {
 		reserved, _ := strconv.Atoi(tubestats["current-jobs-reserved"])
 		delayed, _ := strconv.Atoi(tubestats["current-jobs-delayed"])
 		if ready+reserved+delayed > 0 {
-			this.tubes = append(this.tubes, &Tube{major, minor, ready + reserved, tube})
+			tubes = append(tubes, &Tube{major, minor, ready + reserved, tube})
 		}
 	}
-	this.tubes = this.tubes.TrimMajor()
-	this.tubes = this.tubes.TrimMinor()
+	this.major = tubes.FirstMajor()
+	this.minor = tubes.FirstMinor()
 	return nil
 }
