@@ -72,10 +72,9 @@ func (this Tubes) FirstMinor() Tubes {
 				return this[index-1 : i]
 			}
 		}
-		return this[index:]
+		return this[index-1:]
 	}
 	return this
-
 }
 
 func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
@@ -91,23 +90,22 @@ func (this *JobQueue) ReserveFromTubes(tubes Tubes) (*lentil.Job, error) {
 		if e != nil {
 			return nil, e
 		}
-		watched := append(watched, tube)
-		job, res_err := this.q.ReserveWithTimeout(1)
-		for _, ignored := range watched {
-			_, e = this.q.Ignore(ignored.name)
-			if e != nil {
-				return nil, e
-			}
-		}
-		if res_err != nil {
-			if tubes.Jobs() > 0 {
-				return nil, res_err
-			}
-			return nil, nil
-		}
-		return job, nil
+		watched = append(watched, tube)
 	}
-	return nil, nil
+	job, res_err := this.q.ReserveWithTimeout(1)
+	for _, ignored := range watched {
+		_, e := this.q.Ignore(ignored.name)
+		if e != nil {
+			return nil, e
+		}
+	}
+	if res_err != nil {
+		if tubes.Jobs() > 0 {
+			return nil, res_err
+		}
+		return nil, nil
+	}
+	return job, nil
 }
 
 func (this *JobQueue) Next() (*lentil.Job, error) {

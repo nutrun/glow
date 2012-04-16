@@ -81,6 +81,25 @@ func TestSleepWhenNoJobs(t *testing.T) {
 
 }
 
+func TestTwoMinorsFromDiffQueues(t *testing.T) {
+	q := connect(t)
+	put(t, "job1", "tube1", 0, 1, 0, q)
+	put(t, "job2", "tube2", 0, 1, 0, q)
+	jobs := NewJobQueue(q)
+	job1, err := reserveNextJob(t, jobs, "job1")
+	if err != nil {
+		t.Error(fmt.Sprintf("Could not resere job1 [%v]", err))
+	}
+	job2, err := reserveNextJob(t, jobs, "job2")
+	if err != nil {
+		t.Error(fmt.Sprintf("Could not resere job2 [%v]", err))
+	} else {
+		jobs.Delete(job2.Id)
+	}
+	jobs.Delete(job1.Id)
+
+}
+
 func TestMajoarWorkingPrioraties(t *testing.T) {
 	q := connect(t)
 	put(t, "job11", "tube1", 0, 1, 0, q)
