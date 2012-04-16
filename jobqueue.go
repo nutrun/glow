@@ -129,6 +129,8 @@ func (this *JobQueue) Next() (*lentil.Job, error) {
 		}
 		if job != nil {
 			return job, nil
+		} else {
+			return nil, errors.New("TIMED_OUT")
 		}
 	}
 	return job, nil
