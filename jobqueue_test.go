@@ -85,6 +85,8 @@ func TestTwoMinorsFromDiffQueues(t *testing.T) {
 	q := connect(t)
 	put(t, "job1", "tube1", 0, 1, 0, q)
 	put(t, "job2", "tube2", 0, 1, 0, q)
+	put(t, "job3", "tube3", 0, 1, 0, q)
+	put(t, "job4", "tube4", 0, 1, 0, q)
 	jobs := NewJobQueue(q)
 	job1, err := reserveNextJob(t, jobs, "job1")
 	if err != nil {
@@ -93,11 +95,19 @@ func TestTwoMinorsFromDiffQueues(t *testing.T) {
 	job2, err := reserveNextJob(t, jobs, "job2")
 	if err != nil {
 		t.Error(fmt.Sprintf("Could not resere job2 [%v]", err))
-	} else {
-		jobs.Delete(job2.Id)
+	}
+	job3, err := reserveNextJob(t, jobs, "job3")
+	if err != nil {
+		t.Error(fmt.Sprintf("Could not resere job3 [%v]", err))
+	}
+	job4, err := reserveNextJob(t, jobs, "job4")
+	if err != nil {
+		t.Error(fmt.Sprintf("Could not resere job4 [%v]", err))
 	}
 	jobs.Delete(job1.Id)
-
+	jobs.Delete(job2.Id)
+	jobs.Delete(job3.Id)
+	jobs.Delete(job4.Id)
 }
 
 func TestMajoarWorkingPrioraties(t *testing.T) {
