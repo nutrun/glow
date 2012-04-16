@@ -7,28 +7,6 @@ import (
 	"testing"
 )
 
-func TestMajor(t *testing.T) {
-	tubes := make(Tubes, 3)
-	tubes[0] = &Tube{1, 2, 10, "one"}
-	tubes[1] = &Tube{0, 2, 10, "two"}
-	tubes[2] = &Tube{0, 2, 10, "three"}
-	tubes = tubes.FirstMajor()
-	if tubes.Len() != 2 {
-		t.Errorf("Trim failed to remove tubes, the number of tubes is [%v]", tubes.Len())
-	}
-}
-
-func TestMinor(t *testing.T) {
-	tubes := make(Tubes, 3)
-	tubes[0] = &Tube{1, 2, 10, "one"}
-	tubes[1] = &Tube{0, 3, 10, "two"}
-	tubes[2] = &Tube{0, 2, 10, "three"}
-	tubes = tubes.FirstMinor()
-	if tubes.Len() != 1 {
-		t.Errorf("Trim failed to remove tubes, the number of tubes is [%v]", tubes.Len())
-	}
-}
-
 func TestPriority(t *testing.T) {
 	q := connect(t)
 	put(t, "job1", "tube1", 2, 0, 0, q)
@@ -83,11 +61,13 @@ func TestSleepWhenNoJobs(t *testing.T) {
 
 func TestTwoMinorsFromDiffQueues(t *testing.T) {
 	q := connect(t)
+	put(t, "job0", "tube0", 0, 0, 0, q)
 	put(t, "job1", "tube1", 0, 1, 0, q)
 	put(t, "job2", "tube2", 0, 1, 0, q)
 	put(t, "job3", "tube3", 0, 1, 0, q)
 	put(t, "job4", "tube4", 0, 1, 0, q)
 	jobs := NewJobQueue(q)
+	assertNextJob(t, jobs, "job0")
 	job1, err := reserveNextJob(t, jobs, "job1")
 	if err != nil {
 		t.Error(fmt.Sprintf("Could not resere job1 [%v]", err))
