@@ -68,6 +68,19 @@ func TestMinorPrioraties(t *testing.T) {
 	assertNextJob(t, jobs, "job12")
 }
 
+func TestSleepWhenNoJobs(t *testing.T) {
+	q := connect(t)
+	jobs := NewJobQueue(q)
+	no_job, err := reserveNextJob(t, jobs, "job11")
+	if no_job != nil {
+		t.Error(fmt.Sprintf("Reserved %v when should not have", no_job))
+	}
+	if err == nil {
+		t.Error(fmt.Sprintf("Should have thrown a TIME_OUT, threw  %v instead", err))
+	}
+
+}
+
 func TestMajoarWorkingPrioraties(t *testing.T) {
 	q := connect(t)
 	put(t, "job11", "tube1", 0, 1, 0, q)

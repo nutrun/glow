@@ -62,16 +62,20 @@ func (this Tubes) FirstMajor() Tubes {
 }
 
 func (this Tubes) FirstMinor() Tubes {
-	index := 1
-	for i := 0; i < this.Len(); i++ {
-		if this[0].minorPriority != this[i].minorPriority {
-			index = i
+	if this.Len() > 0 {
+		index := 1
+		for i := 0; i < this.Len(); i++ {
+			if this[0].minorPriority != this[i].minorPriority {
+				index = i
+			}
+			if this[0].majorPriority != this[i].majorPriority {
+				return this[index-1 : i]
+			}
 		}
-		if this[0].majorPriority != this[i].majorPriority {
-			return this[index-1 : i]
-		}
+		return this[index:]
 	}
-	return this[index:]
+	return this
+
 }
 
 func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
