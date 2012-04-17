@@ -132,7 +132,7 @@ func (this *Client) stats() error {
 			if i != 0 {
 				fmt.Printf(",")
 			}
-			fmt.Printf("\n         \"%v\":  {\"jobs-ready\" : %v }", tube.name, tube.jobs)
+			fmt.Printf("\n         \"%v\":  {\"jobs-ready\" : %v}", tube.name, tube.jobs)
 		}
 		fmt.Printf("\n      }")
 	})
