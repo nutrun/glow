@@ -109,22 +109,22 @@ func (this *Client) putMany(input []byte) error {
 }
 
 func (this *Client) stats() error {
-	tubes, e := this.q.ListTubes()
-	if e != nil {
-		return e
-	}
-	allstats := make([]map[string]string, 0)
-	for _, tube := range tubes {
-		stats, e := this.q.StatsTube(tube)
-		if e != nil {
-			return e
+	q := NewJobQueue(this.q)
+	major := -1
+	fmt.Printf("{")
+	q.Stats(func(tubes []*Tube) {
+		if major != tubes[0].majorPriority {
+			if major != -1 {
+				fmt.Printf("\n\t},")
+			}
+			major = tubes[0].majorPriority
+			fmt.Printf("\n\t\"%v\": {", major)
 		}
-		allstats = append(allstats, stats)
-	}
-	statsjson, e := json.Marshal(allstats)
-	if e != nil {
-		return e
-	}
-	fmt.Printf("%s\n", statsjson)
+		fmt.Printf("\n\t\t\"%v\": {", tubes[0].minorPriority)
+		for _, tube := range tubes {
+			fmt.Printf("\n\t\t\t\"%v\":  {\"jobs-ready\" : %v }", tube.name, tube.jobs)
+		}
+		fmt.Printf("\n\t\t}")
+	})
 	return nil
 }

@@ -148,6 +148,15 @@ func (this *JobQueue) priority(tube string) (int, int, error) {
 	return int(priority >> 16), int(priority & 0x0000FFFF), nil
 }
 
+func (this *JobQueue) Stats(f func(tubes []*Tube)) {
+	this.refreshTubes()
+	for tube := range this.Tubes() {
+		for group := range tube.Groups() {
+			f(group.tubes)
+		}
+	}
+}
+
 func (this *JobQueue) refreshTubes() error {
 	this.tubes = make(map[int]*Tubes)
 	names, e := this.q.ListTubes()
