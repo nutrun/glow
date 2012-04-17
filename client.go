@@ -111,12 +111,13 @@ func (this *Client) putMany(input []byte) error {
 func (this *Client) stats() error {
 	q := NewJobQueue(this.q)
 	major := -1
-	fmt.Printf("{")
 	first := true
 	q.Stats(func(tubes []*Tube) {
 		if major != tubes[0].majorPriority {
 			if major != -1 {
 				fmt.Printf("\n\t},")
+			} else {
+				fmt.Printf("{")
 			}
 			first = true
 			major = tubes[0].majorPriority
@@ -135,6 +136,10 @@ func (this *Client) stats() error {
 		}
 		fmt.Printf("\n      }")
 	})
-	fmt.Printf("\n   }\n}\n")
+	if major != -1 {
+		fmt.Printf("\n   }\n}\n")
+	} else {
+		fmt.Printf("404: No tubs found\n")
+	}
 	return nil
 }
