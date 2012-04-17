@@ -56,16 +56,13 @@ func (this *Tubes) SortMapKeys(in map[int]*Group) []int {
 	return keys
 }
 
-func (this *Tubes) Groups() chan *Group {
-	in := make(chan *Group)
+func (this *Tubes) Groups() []*Group {
+	out := make([]*Group, 0)
 	keys := this.SortMapKeys(this.tubes)
-	go func() {
-		for _, key := range keys {
-			in <- this.tubes[key]
-		}
-		close(in)
-	}()
-	return in
+	for _, key := range keys {
+		out = append(out, this.tubes[key])
+	}
+	return out
 }
 
 func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
@@ -83,16 +80,13 @@ func (this *JobQueue) SortMapKeys(in map[int]*Tubes) []int {
 	return keys
 }
 
-func (this *JobQueue) Tubes() chan *Tubes {
-	in := make(chan *Tubes)
+func (this *JobQueue) Tubes() []*Tubes {
+	out := make([]*Tubes, 0)
 	keys := this.SortMapKeys(this.tubes)
-	go func() {
-		for _, key := range keys {
-			in <- this.tubes[key]
-		}
-		close(in)
-	}()
-	return in
+	for _, key := range keys {
+		out = append(out, this.tubes[key])
+	}
+	return out
 }
 
 func (this *JobQueue) ReserveFromGroup(group *Group) (*lentil.Job, error) {
@@ -120,8 +114,8 @@ func (this *JobQueue) ReserveFromGroup(group *Group) (*lentil.Job, error) {
 
 func (this *JobQueue) Next() (*lentil.Job, error) {
 	this.refreshTubes()
-	for tube := range this.Tubes() {
-		for group := range tube.Groups() {
+	for _, tube := range this.Tubes() {
+		for _, group := range tube.Groups() {
 			job, err := this.ReserveFromGroup(group)
 			if err != nil {
 				return nil, err
@@ -150,8 +144,8 @@ func (this *JobQueue) priority(tube string) (int, int, error) {
 
 func (this *JobQueue) Stats(f func(tubes []*Tube)) {
 	this.refreshTubes()
-	for tube := range this.Tubes() {
-		for group := range tube.Groups() {
+	for _, tube := range this.Tubes() {
+		for _, group := range tube.Groups() {
 			f(group.tubes)
 		}
 	}
