@@ -112,19 +112,29 @@ func (this *Client) stats() error {
 	q := NewJobQueue(this.q)
 	major := -1
 	fmt.Printf("{")
+	first := true
 	q.Stats(func(tubes []*Tube) {
 		if major != tubes[0].majorPriority {
 			if major != -1 {
 				fmt.Printf("\n\t},")
 			}
+			first = true
 			major = tubes[0].majorPriority
-			fmt.Printf("\n\t\"%v\": {", major)
+			fmt.Printf("\n   \"%v\": {", major)
 		}
-		fmt.Printf("\n\t\t\"%v\": {", tubes[0].minorPriority)
-		for _, tube := range tubes {
-			fmt.Printf("\n\t\t\t\"%v\":  {\"jobs-ready\" : %v }", tube.name, tube.jobs)
+		if !first {
+			fmt.Printf(",")
 		}
-		fmt.Printf("\n\t\t}")
+		first = false
+		fmt.Printf("\n      \"%v\": {", tubes[0].minorPriority)
+		for i, tube := range tubes {
+			if i != 0 {
+				fmt.Printf(",")
+			}
+			fmt.Printf("\n         \"%v\":  {\"jobs-ready\" : %v }", tube.name, tube.jobs)
+		}
+		fmt.Printf("\n      }")
 	})
+	fmt.Printf("\n   }\n}\n")
 	return nil
 }
