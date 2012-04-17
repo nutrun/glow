@@ -102,7 +102,7 @@ func (this *JobQueue) ReserveFromGroup(group *Group) (*lentil.Job, error) {
 			return nil, e
 		}
 	}
-	job, res_err := this.q.ReserveWithTimeout(1)
+	job, res_err := this.q.ReserveWithTimeout(0)
 	for _, ignored := range group.tubes {
 		_, e := this.q.Ignore(ignored.name)
 		if e != nil {
@@ -130,6 +130,7 @@ func (this *JobQueue) Next() (*lentil.Job, error) {
 				return job, nil
 			}
 		}
+		return nil, errors.New("TIMED_OUT")
 	}
 	return nil, errors.New("TIMED_OUT")
 }
