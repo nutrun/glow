@@ -120,6 +120,36 @@ func TestTwoMinorsFromDiffQueues(t *testing.T) {
 	jobs.Delete(job4.Id)
 }
 
+func TestBlockOnMinorTubeButIgnoreIt(t *testing.T) {
+	q := connect(t)
+	put(t, "job", "block_on", 0, 0, 0, q)
+	put(t, "another", "another", 0, 1, 0, q)
+	jobs := NewJobQueue(q, false, []string{"block_on"})
+	no_job, err := reserveNextJob(t, jobs, "job")
+	if no_job != nil {
+		t.Error(fmt.Sprintf("Reserved %v when should not have", no_job))
+	}
+	if err == nil {
+		t.Error(fmt.Sprintf("Should have thrown a TIME_OUT, threw  %v instead", err))
+	}
+
+}
+
+func TestBlockOnMajorTubeButIgnoreIt(t *testing.T) {
+	q := connect(t)
+	put(t, "job", "block_on", 0, 0, 0, q)
+	put(t, "another", "another", 1, 0, 0, q)
+	jobs := NewJobQueue(q, false, []string{"block_on"})
+	no_job, err := reserveNextJob(t, jobs, "job")
+	if no_job != nil {
+		t.Error(fmt.Sprintf("Reserved %v when should not have", no_job))
+	}
+	if err == nil {
+		t.Error(fmt.Sprintf("Should have thrown a TIME_OUT, threw  %v instead", err))
+	}
+
+}
+
 func TestMajoarWorkingPrioraties(t *testing.T) {
 	q := connect(t)
 	put(t, "job11", "tube1", 0, 1, 0, q)

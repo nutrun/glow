@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/nutrun/lentil"
-	"io/ioutil"
 	"log"
 	"net/smtp"
 	"os"
@@ -36,6 +35,29 @@ func NewListener(verbose, inclusive bool, filter []string) (*Listener, error) {
 	return this, nil
 }
 
+func (this *Listener) execute(msg map[string]string) {
+	workdir := msg["workdir"]
+	e := os.Chdir(workdir)
+	if e != nil {
+		this.catch(msg, e)
+	}
+	messagetokens := strings.Split(msg["cmd"], " ")
+	command := messagetokens[0]
+	args := messagetokens[1:len(messagetokens)]
+	cmd := exec.Command(command, args...)
+	f, e := os.Create(msg["out"])
+	if e != nil {
+		this.catch(msg, e)
+	}
+	cmd.Stderr = f
+	cmd.Stdout = f
+	e = cmd.Run()
+	if e != nil {
+		this.catch(msg, e)
+	}
+	f.Close()
+}
+
 func (this *Listener) run() {
 	go this.trap()
 
@@ -57,30 +79,10 @@ listenerloop:
 		}
 		msg := make(map[string]string)
 		json.Unmarshal([]byte(job.Body), &msg)
-		workdir := msg["workdir"]
-		e = os.Chdir(workdir)
-		if e != nil {
-			this.catch(msg, e)
-			this.jobqueue.Delete(job.Id)
-			goto listenerloop
-		}
-		messagetokens := strings.Split(msg["cmd"], " ")
-		command := messagetokens[0]
-		args := messagetokens[1:len(messagetokens)]
-		cmd := exec.Command(command, args...)
-		out, e := cmd.CombinedOutput()
-		if e != nil {
-			this.catch(msg, e)
-		}
+		this.execute(msg)
 		e = this.jobqueue.Delete(job.Id)
 		if e != nil {
 			this.catch(msg, e)
-		}
-		if len(out) > 0 {
-			e = ioutil.WriteFile(msg["out"], out, 0644)
-			if e != nil {
-				this.catch(msg, e)
-			}
 		}
 	}
 }
