@@ -95,16 +95,20 @@ func (this *JobQueue) Tubes() []*Tubes {
 
 func (this *JobQueue) ReserveFromGroup(group *Group) (*lentil.Job, error) {
 	for _, tube := range group.tubes {
-		_, e := this.q.Watch(tube.name)
-		if e != nil {
-			return nil, e
+		if this.Include(tube.name) {
+			_, e := this.q.Watch(tube.name)
+			if e != nil {
+				return nil, e
+			}
 		}
 	}
 	job, res_err := this.q.ReserveWithTimeout(0)
 	for _, ignored := range group.tubes {
-		_, e := this.q.Ignore(ignored.name)
-		if e != nil {
-			return nil, e
+		if this.Include(ignored.name) {
+			_, e := this.q.Ignore(ignored.name)
+			if e != nil {
+				return nil, e
+			}
 		}
 	}
 	if res_err != nil {
@@ -171,7 +175,7 @@ func (this *JobQueue) refreshTubes() error {
 		return e
 	}
 	for _, tube := range names {
-		if tube == "default" && !this.Include(tube) {
+		if tube == "default" {
 			continue
 		}
 		major, minor, e := this.priority(tube)

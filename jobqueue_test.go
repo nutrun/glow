@@ -126,7 +126,7 @@ func TestMajoarWorkingPrioraties(t *testing.T) {
 	put(t, "job21", "tube2", 0, 0, 0, q)
 	put(t, "job22", "tube2", 0, 0, 0, q)
 	put(t, "job12", "tube1", 0, 1, 0, q)
-	jobs := NewJobQueue(q, true, make([]string, 0))
+	jobs := NewJobQueue(q, false, make([]string, 0))
 	job21, err := reserveNextJob(t, jobs, "job21")
 	if err != nil {
 		t.Error(fmt.Sprintf("Could not resere job21 [%v]", err))
