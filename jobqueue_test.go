@@ -11,9 +11,39 @@ func TestPriority(t *testing.T) {
 	q := connect(t)
 	put(t, "job1", "tube1", 2, 0, 0, q)
 	put(t, "job2", "tube2", 0, 0, 0, q)
-	jobs := NewJobQueue(q)
+	jobs := NewJobQueue(q, false, make([]string, 0))
 	assertNextJob(t, jobs, "job2")
 	assertNextJob(t, jobs, "job1")
+}
+
+func TestIncludeExclude(t *testing.T) {
+	q := connect(t)
+	all := NewJobQueue(q, false, make([]string, 0))
+	if !all.Include("tube") {
+		t.Errorf("Should include tube")
+	}
+	if !all.Include("another") {
+		t.Errorf("Should include another")
+	}
+	none := NewJobQueue(q, true, make([]string, 0))
+	if none.Include("none") {
+		t.Errorf("Should not include tube none")
+	}
+	include := NewJobQueue(q, true, []string{"in"})
+	if !include.Include("in") {
+		t.Errorf("Should include tube in")
+	}
+	if include.Include("out") {
+		t.Errorf("Should not include tube out")
+	}
+	exclude := NewJobQueue(q, false, []string{"out"})
+	if !exclude.Include("in") {
+		t.Errorf("Should not include tube in")
+	}
+	if exclude.Include("out") {
+		t.Errorf("Should not include tube out")
+	}
+
 }
 
 func TestMoarPriorities(t *testing.T) {
@@ -24,7 +54,7 @@ func TestMoarPriorities(t *testing.T) {
 	put(t, "job22", "tube2", 1, 0, 0, q)
 	put(t, "job32", "tube3", 2, 0, 0, q)
 	put(t, "job12", "tube1", 3, 0, 0, q)
-	jobs := NewJobQueue(q)
+	jobs := NewJobQueue(q, false, make([]string, 0))
 	assertNextJob(t, jobs, "job21")
 	assertNextJob(t, jobs, "job22")
 	assertNextJob(t, jobs, "job31")
@@ -39,7 +69,7 @@ func TestMinorPrioraties(t *testing.T) {
 	put(t, "job21", "tube2", 0, 0, 0, q)
 	put(t, "job22", "tube2", 0, 0, 0, q)
 	put(t, "job12", "tube1", 0, 1, 0, q)
-	jobs := NewJobQueue(q)
+	jobs := NewJobQueue(q, false, make([]string, 0))
 	assertNextJob(t, jobs, "job21")
 	assertNextJob(t, jobs, "job22")
 	assertNextJob(t, jobs, "job11")
@@ -48,7 +78,7 @@ func TestMinorPrioraties(t *testing.T) {
 
 func TestSleepWhenNoJobs(t *testing.T) {
 	q := connect(t)
-	jobs := NewJobQueue(q)
+	jobs := NewJobQueue(q, false, make([]string, 0))
 	no_job, err := reserveNextJob(t, jobs, "job11")
 	if no_job != nil {
 		t.Error(fmt.Sprintf("Reserved %v when should not have", no_job))
@@ -66,7 +96,7 @@ func TestTwoMinorsFromDiffQueues(t *testing.T) {
 	put(t, "job2", "tube2", 0, 1, 0, q)
 	put(t, "job3", "tube3", 0, 1, 0, q)
 	put(t, "job4", "tube4", 0, 1, 0, q)
-	jobs := NewJobQueue(q)
+	jobs := NewJobQueue(q, false, make([]string, 0))
 	assertNextJob(t, jobs, "job0")
 	job1, err := reserveNextJob(t, jobs, "job1")
 	if err != nil {
@@ -96,7 +126,7 @@ func TestMajoarWorkingPrioraties(t *testing.T) {
 	put(t, "job21", "tube2", 0, 0, 0, q)
 	put(t, "job22", "tube2", 0, 0, 0, q)
 	put(t, "job12", "tube1", 0, 1, 0, q)
-	jobs := NewJobQueue(q)
+	jobs := NewJobQueue(q, true, make([]string, 0))
 	job21, err := reserveNextJob(t, jobs, "job21")
 	if err != nil {
 		t.Error(fmt.Sprintf("Could not resere job21 [%v]", err))

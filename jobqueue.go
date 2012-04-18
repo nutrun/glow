@@ -8,11 +8,6 @@ import (
 	"strings"
 )
 
-type JobQueue struct {
-	q     *lentil.Beanstalkd
-	tubes map[int]*Tubes
-}
-
 type Tube struct {
 	majorPriority int
 	minorPriority int
@@ -65,9 +60,18 @@ func (this *Tubes) Groups() []*Group {
 	return out
 }
 
-func NewJobQueue(q *lentil.Beanstalkd) *JobQueue {
+type JobQueue struct {
+	q         *lentil.Beanstalkd
+	tubes     map[int]*Tubes
+	inclusive bool
+	filter    []string
+}
+
+func NewJobQueue(q *lentil.Beanstalkd, inclusive bool, filter []string) *JobQueue {
 	this := new(JobQueue)
 	this.q = q
+	this.inclusive = inclusive
+	this.filter = filter
 	return this
 }
 
@@ -151,6 +155,15 @@ func (this *JobQueue) Stats(f func(tubes []*Tube)) {
 	}
 }
 
+func (this *JobQueue) Include(tube string) bool {
+	for _, filter := range this.filter {
+		if strings.Contains(tube, filter) {
+			return this.inclusive
+		}
+	}
+	return !this.inclusive
+}
+
 func (this *JobQueue) refreshTubes() error {
 	this.tubes = make(map[int]*Tubes)
 	names, e := this.q.ListTubes()
@@ -158,7 +171,7 @@ func (this *JobQueue) refreshTubes() error {
 		return e
 	}
 	for _, tube := range names {
-		if tube == "default" {
+		if tube == "default" && !this.Include(tube) {
 			continue
 		}
 		major, minor, e := this.priority(tube)

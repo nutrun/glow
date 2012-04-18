@@ -109,7 +109,7 @@ func (this *Client) putMany(input []byte) error {
 }
 
 func (this *Client) stats() error {
-	q := NewJobQueue(this.q)
+	q := NewJobQueue(this.q, false, make([]string, 0))
 	major := -1
 	first := true
 	q.Stats(func(tubes []*Tube) {

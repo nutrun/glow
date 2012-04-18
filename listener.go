@@ -16,12 +16,13 @@ import (
 )
 
 type Listener struct {
-	q       *lentil.Beanstalkd
-	stopped bool
-	verbose bool
+	q        *lentil.Beanstalkd
+	stopped  bool
+	verbose  bool
+	jobqueue *JobQueue
 }
 
-func NewListener(verbose bool) (*Listener, error) {
+func NewListener(verbose, inclusive bool, filter []string) (*Listener, error) {
 	this := new(Listener)
 	q, err := lentil.Dial(Config.QueueAddr)
 
@@ -31,19 +32,19 @@ func NewListener(verbose bool) (*Listener, error) {
 
 	this.q = q
 	this.verbose = verbose
+	this.jobqueue = NewJobQueue(this.q, inclusive, filter)
 	return this, nil
 }
 
 func (this *Listener) run() {
 	go this.trap()
-	jobqueue := NewJobQueue(this.q)
 
 listenerloop:
 	for {
 		if this.stopped {
 			os.Exit(0)
 		}
-		job, e := jobqueue.Next()
+		job, e := this.jobqueue.Next()
 		if e != nil {
 			if strings.Contains(e.Error(), "TIMED_OUT") {
 				time.Sleep(time.Second)
@@ -60,7 +61,7 @@ listenerloop:
 		e = os.Chdir(workdir)
 		if e != nil {
 			this.catch(msg, e)
-			jobqueue.Delete(job.Id)
+			this.jobqueue.Delete(job.Id)
 			goto listenerloop
 		}
 		messagetokens := strings.Split(msg["cmd"], " ")
@@ -71,7 +72,7 @@ listenerloop:
 		if e != nil {
 			this.catch(msg, e)
 		}
-		e = jobqueue.Delete(job.Id)
+		e = this.jobqueue.Delete(job.Id)
 		if e != nil {
 			this.catch(msg, e)
 		}
