@@ -100,8 +100,8 @@ func (this *Listener) catch(msg map[string]string, e error) {
 	to := strings.Split(msg["mailto"], ",")
 	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg["cmd"])
 	hostname, _ := os.Hostname()
-	content, e := ioutil.ReadFile(msg["out"])
-	if e != nil {
+	content, err := ioutil.ReadFile(msg["out"])
+	if err != nil {
 		content = []byte(fmt.Sprintf("Could not read job log from [%s]", msg["out"]))
 	}
 	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s", hostname, e, content))
