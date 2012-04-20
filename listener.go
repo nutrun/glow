@@ -100,9 +100,19 @@ func (this *Listener) catch(msg map[string]string, e error) {
 	to := strings.Split(msg["mailto"], ",")
 	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg["cmd"])
 	hostname, _ := os.Hostname()
-	content, err := ioutil.ReadFile(msg["out"])
+	content := make([]byte, 0)
+	info, err := os.Stat(msg["out"])
 	if err != nil {
-		content = []byte(fmt.Sprintf("Could not read job log from [%s]", msg["out"]))
+		content = []byte(fmt.Sprintf("Could not read job log from [%s]. %s", msg["out"], err.Error()))
+	}
+	if info.Size() > 1024 {
+		content = []byte(fmt.Sprintf("Could send job log [%s]. File too big", msg["out"]))
+
+	} else {
+		content, err = ioutil.ReadFile(msg["out"])
+		if err != nil {
+			content = []byte(fmt.Sprintf("Could not read job log from [%s]", msg["out"]))
+		}
 	}
 	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s", hostname, e, content))
 	e = smtp.SendMail(Config.SmtpServerAddr, nil, Config.MailFrom, to, []byte(mail))
