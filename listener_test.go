@@ -1,19 +1,27 @@
 package main
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
-func TestOutputOfRun(t *testing.T) {
-	listener := NewTestListener(false, []string{})
+func TestOutput(t *testing.T) {
+	listener := new(Listener)
 	msg := make(map[string]string)
-	msg["cmd"] = "ls -lh"
+	msg["cmd"] = "echo you suck"
 	msg["out"] = "test.out"
 	msg["workdir"] = "."
 	listener.execute(msg)
-}
-
-func NewTestListener(inclusive bool, filter []string) *Listener {
-	this := new(Listener)
-	return this
+	out, e := ioutil.ReadFile("test.out")
+	if e != nil {
+		t.Fatal(e)
+	}
+	if string(out) != "you suck\n" {
+		t.Errorf("[%s] isn't you suck", out)
+	}
+	os.Remove("test.out")
+	if e != nil {
+		t.Fatal(e)
+	}
 }
