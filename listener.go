@@ -98,7 +98,8 @@ func (this *Listener) catch(msg map[string]string, e error) {
 	}
 	to := strings.Split(msg["mailto"], ",")
 	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg["cmd"])
-	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("%s", e))
+	hostname, _ := os.Hostname()
+	mail := fmt.Sprintf("Ran on [%s]\n%s%s", hostname, subject, fmt.Sprintf("%s", e))
 	e = smtp.SendMail(Config.SmtpServerAddr, nil, Config.MailFrom, to, []byte(mail))
 	if e != nil {
 		log.Printf("ERROR: %s\n", e)
