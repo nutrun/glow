@@ -27,16 +27,15 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir, out, tube string, major, minor, delay int) error {
+func (this *Client) put(cmd, mailto, workdir, out, tube string, priority, delay int) error {
 	msg := make(map[string]string)
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
 	msg["tube"] = tube
+	msg["priority"] = fmt.Sprintf("%d", priority)
 	if tube == "" {
 		return errors.New("Missing required param -tube")
 	}
-	msg["major"] = fmt.Sprintf("%d", major) // Not used except for debugging
-	msg["minor"] = fmt.Sprintf("%d", minor) // Not used except for debugging
 	msg["delay"] = fmt.Sprintf("%d", delay) // Not used except for debugging
 	workdir, e := filepath.Abs(workdir)
 	if e != nil {
@@ -52,12 +51,12 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, major, minor, de
 		return e
 	}
 	if tube != "default" {
-		e = this.q.Use(fmt.Sprintf("%s_%d", tube, int((major<<16)|minor)))
+		e = this.q.Use(tube)
 		if e != nil {
 			return e
 		}
 	}
-	_, e = this.q.Put(int((major<<16)|minor), delay, 60*60, message) // An hour TTR?
+	_, e = this.q.Put(priority, delay, 60*60, message) // An hour TTR?
 	return e
 }
 
@@ -68,25 +67,15 @@ func (this *Client) putMany(input []byte) error {
 		return e
 	}
 	for _, job := range jobs {
-		major := 0
-		majorStr, exists := job["major"]
-		if exists {
-			major, e = strconv.Atoi(majorStr)
-			if e != nil {
-				return e
-			}
-		}
-		minor := 0
-		minorStr, exists := job["minor"]
-		if exists {
-			minor, e = strconv.Atoi(minorStr)
+		priority := 0
+		if priorityStr, exists := job["major"]; exists {
+			priority, e = strconv.Atoi(priorityStr)
 			if e != nil {
 				return e
 			}
 		}
 		delay := 0
-		delayStr, exists := job["delay"]
-		if exists {
+		if delayStr, exists := job["delay"]; exists {
 			delay, e = strconv.Atoi(delayStr)
 			if e != nil {
 				return e
@@ -101,7 +90,7 @@ func (this *Client) putMany(input []byte) error {
 		if exists {
 			workdir = dir
 		}
-		e = this.put(job["cmd"], job["mailto"], workdir, out, job["tube"], major, minor, delay)
+		e = this.put(job["cmd"], job["mailto"], workdir, out, job["tube"], priority, delay)
 		if e != nil {
 			return e
 		}
