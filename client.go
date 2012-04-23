@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -110,36 +111,15 @@ func (this *Client) putMany(input []byte) error {
 
 func (this *Client) stats() error {
 	q := NewJobQueue(this.q, false, make([]string, 0))
-	major := -1
-	first := true
-	q.Stats(func(tubes []*Tube) {
-		if major != tubes[0].majorPriority {
-			if major != -1 {
-				fmt.Printf("\n\t},")
-			} else {
-				fmt.Printf("{")
-			}
-			first = true
-			major = tubes[0].majorPriority
-			fmt.Printf("\n   \"%v\": {", major)
-		}
-		if !first {
-			fmt.Printf(",")
-		}
-		first = false
-		fmt.Printf("\n      \"%v\": {", tubes[0].minorPriority)
-		for i, tube := range tubes {
-			if i != 0 {
-				fmt.Printf(",")
-			}
-			fmt.Printf("\n         \"%v\":  {\"jobs-ready\" : %v}", tube.name, tube.jobs)
-		}
-		fmt.Printf("\n      }")
-	})
-	if major != -1 {
-		fmt.Printf("\n   }\n}\n")
-	} else {
-		fmt.Printf("404: No tubs found\n")
+	stats, err := json.Marshal(q)
+	if err != nil {
+		return err
 	}
+	buffer := bytes.NewBufferString("")
+	err = json.Indent(buffer, stats, "", "\t")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s", buffer.String())
 	return nil
 }

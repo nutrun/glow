@@ -1,68 +1,15 @@
 package main
 
 import (
-	"errors"
+	"encoding/json"
 	"github.com/nutrun/lentil"
-	"sort"
 	"strconv"
 	"strings"
 )
 
-type Tube struct {
-	majorPriority int
-	minorPriority int
-	jobs          int
-	name          string
-}
-
-type Group struct {
-	tubes []*Tube
-}
-
-func (this *Group) AddTube(tube *Tube) {
-	this.tubes = append(this.tubes, tube)
-}
-
-func (this *Group) Jobs() int {
-	jobs := 0
-	for _, job := range this.tubes {
-		jobs += job.jobs
-	}
-	return jobs
-}
-
-type Tubes struct {
-	tubes map[int]*Group
-}
-
-func (this *Tubes) AddTube(tube *Tube) {
-	if _, found := this.tubes[tube.minorPriority]; !found {
-		this.tubes[tube.minorPriority] = &Group{make([]*Tube, 0)}
-	}
-	this.tubes[tube.minorPriority].AddTube(tube)
-}
-
-func (this *Tubes) SortMapKeys(in map[int]*Group) []int {
-	keys := make([]int, 0)
-	for k, _ := range in {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-	return keys
-}
-
-func (this *Tubes) Groups() []*Group {
-	out := make([]*Group, 0)
-	keys := this.SortMapKeys(this.tubes)
-	for _, key := range keys {
-		out = append(out, this.tubes[key])
-	}
-	return out
-}
-
 type JobQueue struct {
 	q         *lentil.Beanstalkd
-	tubes     map[int]*Tubes
+	tubes     map[string]*Tube
 	inclusive bool
 	filter    []string
 }
@@ -75,26 +22,18 @@ func NewJobQueue(q *lentil.Beanstalkd, inclusive bool, filter []string) *JobQueu
 	return this
 }
 
-func (this *JobQueue) SortMapKeys(in map[int]*Tubes) []int {
-	keys := make([]int, 0)
-	for k, _ := range in {
-		keys = append(keys, k)
+func (this *JobQueue) ReadyTubes() []*Tube {
+	ready := make([]*Tube, 0)
+	for _, tube := range this.tubes {
+		if tube.Ready(this.tubes) {
+			ready = append(ready, tube)
+		}
 	}
-	sort.Ints(keys)
-	return keys
+	return ready
 }
 
-func (this *JobQueue) Tubes() []*Tubes {
-	out := make([]*Tubes, 0)
-	keys := this.SortMapKeys(this.tubes)
-	for _, key := range keys {
-		out = append(out, this.tubes[key])
-	}
-	return out
-}
-
-func (this *JobQueue) ReserveFromGroup(group *Group) (*lentil.Job, error) {
-	for _, tube := range group.tubes {
+func (this *JobQueue) ReserveFromTubes(tubes []*Tube) (*lentil.Job, error) {
+	for _, tube := range tubes {
 		if this.Include(tube.name) {
 			_, e := this.q.Watch(tube.name)
 			if e != nil {
@@ -102,8 +41,8 @@ func (this *JobQueue) ReserveFromGroup(group *Group) (*lentil.Job, error) {
 			}
 		}
 	}
-	job, res_err := this.q.ReserveWithTimeout(0)
-	for _, ignored := range group.tubes {
+	job, err := this.q.ReserveWithTimeout(0)
+	for _, ignored := range tubes {
 		if this.Include(ignored.name) {
 			_, e := this.q.Ignore(ignored.name)
 			if e != nil {
@@ -111,52 +50,21 @@ func (this *JobQueue) ReserveFromGroup(group *Group) (*lentil.Job, error) {
 			}
 		}
 	}
-	if res_err != nil {
-		if group.Jobs() > 0 {
-			return nil, res_err
-		}
-		return nil, nil
-	}
-	return job, nil
+	return job, err
 }
 
 func (this *JobQueue) Next() (*lentil.Job, error) {
 	this.refreshTubes()
-	for _, tube := range this.Tubes() {
-		for _, group := range tube.Groups() {
-			job, err := this.ReserveFromGroup(group)
-			if err != nil {
-				return nil, err
-			}
-			if job != nil {
-				return job, nil
-			}
-		}
-		return nil, errors.New("TIMED_OUT")
-	}
-	return nil, errors.New("TIMED_OUT")
+	return this.ReserveFromTubes(this.ReadyTubes())
 }
 
 func (this *JobQueue) Delete(id uint64) error {
 	return this.q.Delete(id)
 }
 
-func (this *JobQueue) priority(tube string) (int, int, error) {
-	index := strings.LastIndex(tube, "_")
-	priority, err := strconv.Atoi(tube[index+1:])
-	if err != nil {
-		return 0, 0, err
-	}
-	return int(priority >> 16), int(priority & 0x0000FFFF), nil
-}
-
-func (this *JobQueue) Stats(f func(tubes []*Tube)) {
+func (this *JobQueue) MarshalJSON() ([]byte, error) {
 	this.refreshTubes()
-	for _, tube := range this.Tubes() {
-		for _, group := range tube.Groups() {
-			f(group.tubes)
-		}
-	}
+	return json.Marshal(this.tubes)
 }
 
 func (this *JobQueue) Include(tube string) bool {
@@ -169,17 +77,13 @@ func (this *JobQueue) Include(tube string) bool {
 }
 
 func (this *JobQueue) refreshTubes() error {
-	this.tubes = make(map[int]*Tubes)
+	this.tubes = make(map[string]*Tube)
 	names, e := this.q.ListTubes()
 	if e != nil {
 		return e
 	}
 	for _, tube := range names {
 		if tube == "default" {
-			continue
-		}
-		major, minor, e := this.priority(tube)
-		if e != nil {
 			continue
 		}
 		tubestats, e := this.q.StatsTube(tube)
@@ -189,12 +93,7 @@ func (this *JobQueue) refreshTubes() error {
 		ready, _ := strconv.Atoi(tubestats["current-jobs-ready"])
 		reserved, _ := strconv.Atoi(tubestats["current-jobs-reserved"])
 		delayed, _ := strconv.Atoi(tubestats["current-jobs-delayed"])
-		if ready+reserved+delayed > 0 {
-			if _, found := this.tubes[major]; !found {
-				this.tubes[major] = &Tubes{make(map[int]*Group)}
-			}
-			this.tubes[major].AddTube(&Tube{major, minor, ready + reserved, tube})
-		}
+		this.tubes[tube] = NewTube(tube, uint(reserved), uint(ready), uint(delayed))
 	}
 	return nil
 }
