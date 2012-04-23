@@ -67,6 +67,7 @@ listenerloop:
 		if this.stopped {
 			os.Exit(0)
 		}
+		Config.Load()
 		job, e := this.jobqueue.Next()
 		if e != nil {
 			if strings.Contains(e.Error(), "TIMED_OUT") {
