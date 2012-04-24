@@ -17,9 +17,10 @@ import (
 
 type Listener struct {
 	q        *lentil.Beanstalkd
-	stopped  bool
 	verbose  bool
 	jobqueue *JobQueue
+	sig      os.Signal
+	proc     *os.Process
 }
 
 func NewListener(verbose, inclusive bool, filter []string) (*Listener, error) {
@@ -52,10 +53,17 @@ func (this *Listener) execute(msg map[string]string) {
 	}
 	cmd.Stderr = f
 	cmd.Stdout = f
-	e = cmd.Run()
+	this.proc = cmd.Process
+	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)
 	}
+	this.proc = cmd.Process
+	e = cmd.Wait()
+	if e != nil {
+		this.catch(msg, e)
+	}
+	this.proc = nil
 	f.Close()
 }
 
@@ -64,7 +72,7 @@ func (this *Listener) run() {
 
 listenerloop:
 	for {
-		if this.stopped {
+		if this.sig != nil {
 			os.Exit(0)
 		}
 		Config.Load()
@@ -126,7 +134,13 @@ func (this *Listener) catch(msg map[string]string, e error) {
 func (this *Listener) trap() {
 	receivedSignal := make(chan os.Signal)
 	signal.Notify(receivedSignal, syscall.SIGTERM, syscall.SIGINT)
-	sig := <-receivedSignal
-	log.Printf("Got signal %d. Waiting for current job to complete.", sig)
-	this.stopped = true
+	this.sig = <-receivedSignal
+	if this.sig.String() == syscall.SIGTERM.String() {
+		log.Printf("Got signal %d. Killing current job.", this.sig)
+		if this.proc != nil {
+			this.proc.Kill()
+		}
+		os.Exit(1)
+	}
+	log.Printf("Got signal %d. Waiting for current job to complete. sig term is [%v]", this.sig, syscall.SIGTERM)
 }
