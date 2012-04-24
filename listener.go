@@ -126,10 +126,7 @@ func (this *Listener) catch(msg map[string]string, e error) {
 func (this *Listener) trap() {
 	receivedSignal := make(chan os.Signal)
 	signal.Notify(receivedSignal, syscall.SIGTERM, syscall.SIGINT)
-
-	for {
-		sig := <-receivedSignal
-		log.Printf("Got signal %d. Waiting for current job to complete.", sig)
-		this.stopped = true
-	}
+	sig := <-receivedSignal
+	log.Printf("Got signal %d. Waiting for current job to complete.", sig)
+	this.stopped = true
 }
