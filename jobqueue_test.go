@@ -7,13 +7,13 @@ import (
 	"testing"
 )
 
-func reset() {
+func resetConfig() {
 	Config.deps = make(map[string][]string)
 }
 
 func TestPriority(t *testing.T) {
 	q := connect(t)
-	reset()
+	resetConfig()
 	Config.deps["tube1"] = []string{"tube2"}
 	put(t, "job1", "tube1", 0, q)
 	put(t, "job2", "tube2", 0, q)
@@ -24,7 +24,7 @@ func TestPriority(t *testing.T) {
 
 func TestIncludeExclude(t *testing.T) {
 	q := connect(t)
-	reset()
+	resetConfig()
 	all := NewJobQueue(q, false, make([]string, 0))
 	if !all.Include("tube") {
 		t.Errorf("Should include tube")
@@ -55,7 +55,7 @@ func TestIncludeExclude(t *testing.T) {
 
 func TestMoarPriorities(t *testing.T) {
 	q := connect(t)
-	reset()
+	resetConfig()
 	Config.deps["tube3"] = []string{"tube2"}
 	Config.deps["tube1"] = []string{"tube3"}
 	put(t, "job11", "tube1", 0, q)
@@ -75,7 +75,7 @@ func TestMoarPriorities(t *testing.T) {
 
 func TestSleepWhenNoJobs(t *testing.T) {
 	q := connect(t)
-	reset()
+	resetConfig()
 	jobs := NewJobQueue(q, false, make([]string, 0))
 	no_job, err := reserveNextJob(t, jobs, "job11")
 
@@ -90,7 +90,7 @@ func TestSleepWhenNoJobs(t *testing.T) {
 
 func TestBlockOnReserved(t *testing.T) {
 	q := connect(t)
-	reset()
+	resetConfig()
 	Config.deps["tube1"] = []string{"tube2"}
 	put(t, "job1", "tube1", 0, q)
 	put(t, "job2", "tube2", 0, q)
@@ -111,7 +111,7 @@ func TestBlockOnReserved(t *testing.T) {
 
 func TestBlockOnIgnored(t *testing.T) {
 	q := connect(t)
-	reset()
+	resetConfig()
 	Config.deps["another"] = []string{"block_on"}
 	put(t, "job", "block_on", 0, q)
 	put(t, "another", "another", 0, q)
