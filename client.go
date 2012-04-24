@@ -109,6 +109,6 @@ func (this *Client) stats() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s", buffer.String())
+	fmt.Printf("%s\n", buffer.String())
 	return nil
 }
