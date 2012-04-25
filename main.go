@@ -5,9 +5,7 @@ import (
 	"flag"
 	"log"
 	"os"
-	"runtime/pprof"
 	"strings"
-	"time"
 )
 
 var listener *bool = flag.Bool("listen", false, "Start listener")
@@ -22,7 +20,6 @@ var verbose *bool = flag.Bool("v", false, "Increase verbosity")
 var exclude *string = flag.String("exclude", "", "comma separated exclude tubes")
 var priority *int = flag.Int("priority", 0, "Job priority (smaller runs first)")
 var delay *int = flag.Int("delay", 0, "Job delay in seconds")
-var mprof *string = flag.String("mprof", "", "Write heap profile on exit")
 
 func main() {
 	flag.Parse()
@@ -37,20 +34,6 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 		l.run()
-		// Dump heap profile
-		if *mprof != "" {
-			log.Printf("Writing memory profile to %s\n", *mprof)
-			f, e := os.Create(*mprof)
-			if e != nil {
-				log.Fatal(e)
-			}
-			e = pprof.WriteHeapProfile(f)
-			if e != nil {
-				log.Fatal(e)
-			}
-			f.Close()
-			time.Sleep(time.Second)
-		}
 	} else if *drain != "" {
 		c, e := NewClient(*verbose)
 		if e != nil {
