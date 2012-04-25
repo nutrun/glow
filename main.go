@@ -17,6 +17,7 @@ var workdir *string = flag.String("workdir", "/tmp", "Directory to run job from"
 var out *string = flag.String("out", "/dev/null", "File to send job's stdout and stderr")
 var tube *string = flag.String("tube", "", "Beanstalkd tube to send the job to")
 var stats *bool = flag.Bool("stats", false, "Show queue stats")
+var drain *string = flag.String("drain", "", "Empty a tube")
 var verbose *bool = flag.Bool("v", false, "Increase verbosity")
 var exclude *string = flag.String("exclude", "", "comma separated exclude tubes")
 var priority *int = flag.Int("priority", 0, "Job priority (smaller runs first)")
@@ -49,6 +50,15 @@ func main() {
 			}
 			f.Close()
 			time.Sleep(time.Second)
+		}
+	} else if *drain != "" {
+		c, e := NewClient(*verbose)
+		if e != nil {
+			log.Fatalf("ERROR: %s", e.Error())
+		}
+		e = c.drain(*drain)
+		if e != nil {
+			log.Fatalf("ERROR: %s", e.Error())
 		}
 	} else if *stats {
 		c, e := NewClient(*verbose)

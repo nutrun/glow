@@ -112,3 +112,18 @@ func (this *Client) stats() error {
 	fmt.Printf("%s\n", buffer.String())
 	return nil
 }
+
+func (this *Client) drain(tube string) error {
+	_, err := this.q.Watch(tube)
+	if err != nil {
+		return err
+	}
+	_, err = this.q.Ignore("default")
+	if err != nil {
+		return err
+	}
+	for job, err := this.q.ReserveWithTimeout(0); err == nil; job, err = this.q.ReserveWithTimeout(0) {
+		this.q.Delete(job.Id)
+	}
+	return err
+}
