@@ -123,7 +123,7 @@ func (this *Listener) catch(msg map[string]string, e error) {
 			content = []byte(fmt.Sprintf("Could not read job log from [%s]", msg["out"]))
 		}
 	}
-	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s", hostname, e, content))
+	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s\n%s", hostname, subject, e, content))
 	e = smtp.SendMail(Config.SmtpServerAddr, nil, Config.MailFrom, to, []byte(mail))
 	if e != nil {
 		log.Printf("ERROR: %s\n", e)
