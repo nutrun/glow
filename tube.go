@@ -29,20 +29,10 @@ func (this *Tube) Jobs() uint {
 	return this.delayed + this.ready + this.reserved
 }
 
-func (this *Tube) WaitingOnJobs(queue map[string]*Tube) uint {
-	waiting := uint(0)
-	for _, dep := range this.deps {
-		if tube, found := queue[dep]; found {
-			waiting += tube.Jobs() + tube.WaitingOnJobs(queue)
-		}
-	}
-	return waiting
-}
-
 func (this *Tube) Ready(queue map[string]*Tube) bool {
 	for _, dep := range this.deps {
 		if tube, found := queue[dep]; found {
-			if tube.Jobs()+tube.WaitingOnJobs(queue) > 0 {
+			if tube.Jobs() > 0 {
 				return false
 			}
 		}
