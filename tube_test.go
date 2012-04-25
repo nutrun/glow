@@ -46,10 +46,14 @@ func TestLargeDependencyGraph(t *testing.T) {
 	queue["SessionTriggers"].ready = 1
 	queue["ValidateBeast"].ready = 1
 	if !queue["SessionTriggers"].Ready(queue) {
-		t.Errorf("y u no redi?")
+		t.Error("y u no redi?")
 	}
 	if queue["ValidateBeast"].Ready(queue) {
-		t.Errorf("y u redi?")
+		t.Error("y u redi?")
+	}
+	queue["FillRsyncBeast"].ready = 1
+	if queue["FillRsyncBeast"].Ready(queue) {
+		t.Error("y u redi?")
 	}
 }
 
