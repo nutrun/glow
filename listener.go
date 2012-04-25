@@ -114,7 +114,7 @@ func (this *Listener) catch(msg map[string]string, e error) {
 	if err != nil {
 		content = []byte(fmt.Sprintf("Could not read job log from [%s]. %s", msg["out"], err.Error()))
 	}
-	if info.Size() > 1024 {
+	if info.Size() > 1048576 {
 		content = []byte(fmt.Sprintf("Could send job log [%s]. File too big", msg["out"]))
 
 	} else {
