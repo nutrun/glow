@@ -53,7 +53,6 @@ func (this *Listener) execute(msg map[string]string) {
 	}
 	cmd.Stderr = f
 	cmd.Stdout = f
-	this.proc = cmd.Process
 	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)
