@@ -100,15 +100,31 @@ listenerloop:
 // Log and email errors
 func (this *Listener) catch(msg map[string]string, e error) {
 	log.Printf("ERROR: %s\n", e.Error())
-	if Config.SmtpServerAddr == "" {
+	this.mail(msg, e)
+	this.publishError(msg, e)
+
+}
+
+func (this *Listener) publishError(msg map[string]string, e error) {
+	err := this.q.Use(Config.errorQueue)
+	if err != nil {
+		log.Printf("ERROR: %s\n", err)
 		return
 	}
-	if len(msg["mailto"]) < 1 { //no email addresses
+	msg["error"] = e.Error()
+	msg["log"] = this.readLog(msg)
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("ERROR: %s\n", err)
 		return
 	}
-	to := strings.Split(msg["mailto"], ",")
-	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg["cmd"])
-	hostname, _ := os.Hostname()
+	_, err = this.q.Put(0, 0, 60*60, payload)
+	if err != nil {
+		log.Printf("ERROR: %s\n", err)
+	}
+}
+
+func (this *Listener) readLog(msg map[string]string) string {
 	content := make([]byte, 0)
 	info, err := os.Stat(msg["out"])
 	if err != nil {
@@ -123,6 +139,21 @@ func (this *Listener) catch(msg map[string]string, e error) {
 			content = []byte(fmt.Sprintf("Could not read job log from [%s]", msg["out"]))
 		}
 	}
+	return string(content)
+
+}
+
+func (this *Listener) mail(msg map[string]string, e error) {
+	if Config.SmtpServerAddr == "" {
+		return
+	}
+	if len(msg["mailto"]) < 1 { //no email addresses
+		return
+	}
+	to := strings.Split(msg["mailto"], ",")
+	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg["cmd"])
+	hostname, _ := os.Hostname()
+	content := []byte(this.readLog(msg))
 	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s", hostname, e, content))
 	e = smtp.SendMail(Config.SmtpServerAddr, nil, Config.MailFrom, to, []byte(mail))
 	if e != nil {

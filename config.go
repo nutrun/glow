@@ -11,6 +11,7 @@ type Configuration struct {
 	SmtpServerAddr string
 	MailFrom       string
 	deps           map[string][]string
+	errorQueue     string
 }
 
 func NewConfig() *Configuration {
@@ -24,6 +25,7 @@ func NewConfig() *Configuration {
 	if config.MailFrom == "" {
 		config.MailFrom = "glow@example.com"
 	}
+	config.errorQueue = "GLOW_ERRORS"
 	return config
 }
 

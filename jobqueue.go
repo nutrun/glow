@@ -83,7 +83,7 @@ func (this *JobQueue) refreshTubes() error {
 		return e
 	}
 	for _, tube := range names {
-		if tube == "default" {
+		if tube == "default" || tube == Config.errorQueue {
 			continue
 		}
 		tubestats, e := this.q.StatsTube(tube)
