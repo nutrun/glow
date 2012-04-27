@@ -53,7 +53,6 @@ func (this *Listener) execute(msg map[string]string) {
 	}
 	cmd.Stderr = f
 	cmd.Stdout = f
-	this.proc = cmd.Process
 	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)
@@ -154,7 +153,7 @@ func (this *Listener) mail(msg map[string]string, e error) {
 	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg["cmd"])
 	hostname, _ := os.Hostname()
 	content := []byte(this.readLog(msg))
-	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s", hostname, e, content))
+	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s\n%s", hostname, subject, e, content))
 	e = smtp.SendMail(Config.SmtpServerAddr, nil, Config.MailFrom, to, []byte(mail))
 	if e != nil {
 		log.Printf("ERROR: %s\n", e)
