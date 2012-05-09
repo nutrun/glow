@@ -23,7 +23,7 @@ func TestOutput(t *testing.T) {
 	if string(out) != "you suck\n" {
 		t.Errorf("[%s] isn't you suck", out)
 	}
-	os.Remove("test.out")
+	e = os.Remove("test.out")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -51,4 +51,8 @@ func TestPutErrorOnBeanstalk(t *testing.T) {
 		t.Errorf("Recieved Unexpected Msg [%v]", failed.Body)
 	}
 	listener.q.Delete(failed.Id)
+	err = os.Remove("test.out")
+	if err != nil {
+		t.Fatal(err)
+	}
 }

@@ -18,7 +18,7 @@ var stats *bool = flag.Bool("stats", false, "Show queue stats")
 var drain *string = flag.String("drain", "", "Empty a tube")
 var verbose *bool = flag.Bool("v", false, "Increase verbosity")
 var exclude *string = flag.String("exclude", "", "Tubes to ignore (comma separated)")
-var priority *int = flag.Int("priority", 0, "Job priority (smaller runs first)")
+var priority *int = flag.Int("pri", 0, "Job priority (smaller runs first)")
 var delay *int = flag.Int("delay", 0, "Job delay in seconds")
 
 func main() {
