@@ -42,6 +42,7 @@ func (this *Listener) execute(msg map[string]string) {
 	e := os.Chdir(workdir)
 	if e != nil {
 		this.catch(msg, e)
+		return
 	}
 	messagetokens := strings.Split(msg["cmd"], " ")
 	command := messagetokens[0]
@@ -52,19 +53,25 @@ func (this *Listener) execute(msg map[string]string) {
 		this.catch(msg, e)
 		return
 	}
+
+	defer f.Close()
+
 	cmd.Stderr = f
 	cmd.Stdout = f
+
 	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)
+		return
 	}
+
 	this.proc = cmd.Process
 	e = cmd.Wait()
+
 	if e != nil {
 		this.catch(msg, e)
 	}
 	this.proc = nil
-	f.Close()
 }
 
 func (this *Listener) run() {
@@ -102,7 +109,6 @@ func (this *Listener) catch(msg map[string]string, e error) {
 	log.Printf("ERROR: %s\n", e.Error())
 	this.mail(msg, e)
 	this.publishError(msg, e)
-
 }
 
 func (this *Listener) publishError(msg map[string]string, e error) {
