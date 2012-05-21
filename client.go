@@ -32,7 +32,7 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, priority, delay 
 	msg["cmd"] = cmd
 	msg["mailto"] = mailto
 	msg["tube"] = tube
-	msg["priority"] = fmt.Sprintf("%d", priority)
+	msg["pri"] = fmt.Sprintf("%d", priority) // Not used except for debugging
 	if tube == "" {
 		return errors.New("Missing required param -tube")
 	}
@@ -68,7 +68,7 @@ func (this *Client) putMany(input []byte) error {
 	}
 	for _, job := range jobs {
 		priority := 0
-		if priorityStr, exists := job["major"]; exists {
+		if priorityStr, exists := job["pri"]; exists {
 			priority, e = strconv.Atoi(priorityStr)
 			if e != nil {
 				return e
