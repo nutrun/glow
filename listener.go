@@ -50,6 +50,7 @@ func (this *Listener) execute(msg map[string]string) {
 	f, e := os.Create(msg["out"])
 	if e != nil {
 		this.catch(msg, e)
+		return
 	}
 	cmd.Stderr = f
 	cmd.Stdout = f
@@ -128,10 +129,10 @@ func (this *Listener) readLog(msg map[string]string) string {
 	info, err := os.Stat(msg["out"])
 	if err != nil {
 		content = []byte(fmt.Sprintf("Could not read job log from [%s]. %s", msg["out"], err.Error()))
+		return string(content)
 	}
 	if info.Size() > 104857 {
 		content = []byte(fmt.Sprintf("Could send job log [%s]. File too big", msg["out"]))
-
 	} else {
 		content, err = ioutil.ReadFile(msg["out"])
 		if err != nil {
