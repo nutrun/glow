@@ -179,5 +179,6 @@ func (this *Listener) trap() {
 		}
 		os.Exit(1)
 	}
+	go this.trap()
 	log.Printf("Got signal %d. Waiting for current job to complete. sig term is [%v]", this.sig, syscall.SIGTERM)
 }
