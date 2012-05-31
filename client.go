@@ -9,6 +9,7 @@ import (
 	"log"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type Client struct {
@@ -114,16 +115,21 @@ func (this *Client) stats() error {
 }
 
 func (this *Client) drain(tube string) error {
-	_, err := this.q.Watch(tube)
-	if err != nil {
-		return err
+	for _, tube := range strings.Split(tube, ",") {
+		_, err := this.q.Watch(tube)
+		if err != nil {
+			return err
+		}
+		_, err = this.q.Ignore("default")
+		if err != nil {
+			return err
+		}
+		for job, err := this.q.ReserveWithTimeout(0); err == nil; job, err = this.q.ReserveWithTimeout(0) {
+			this.q.Delete(job.Id)
+		}
+		if err != nil {
+			return err
+		}
 	}
-	_, err = this.q.Ignore("default")
-	if err != nil {
-		return err
-	}
-	for job, err := this.q.ReserveWithTimeout(0); err == nil; job, err = this.q.ReserveWithTimeout(0) {
-		this.q.Delete(job.Id)
-	}
-	return err
+	return nil
 }
