@@ -9,12 +9,12 @@ from select import select
 class TestGlowIntegration(unittest.TestCase):
 
     def setUp(self):
+        for tube in tubes():
+            drain(tube)
         self.listener = Listener()
 
     def tearDown(self):
         self.listener.kill()
-        for tube in tubes():
-            drain(tube)
 
     def test_listener_runs_job(self):
         tmpfilename = temporary_file_name()
