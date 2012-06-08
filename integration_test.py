@@ -66,9 +66,12 @@ class TestGlowIntegration(unittest.TestCase):
         self.listener.kill()
         self.listener.wait_for_shutdown()
         
-        with open(tmpfilename, 'r') as outfile:
-            self.assertNotEqual('listener_kills_job_on_kill\n', outfile.read())
-    
+        try:
+            with open(tmpfilename, 'r') as outfile:
+                self.assertNotEqual('listener_kills_job_on_kill\n', outfile.read())
+        except IOError as e:
+            # ignore if file was never created
+            if e.errno != 2: raise
 
 debug = False
 
