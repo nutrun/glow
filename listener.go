@@ -37,12 +37,12 @@ func NewListener(verbose, inclusive bool, filter []string) (*Listener, error) {
 	return this, nil
 }
 
-func (this *Listener) execute(msg map[string]string) {
+func (this *Listener) execute(msg map[string]string) error {
 	workdir := msg["workdir"]
 	e := os.Chdir(workdir)
 	if e != nil {
 		this.catch(msg, e)
-		return
+		return e
 	}
 	messagetokens := strings.Split(msg["cmd"], " ")
 	command := messagetokens[0]
@@ -51,7 +51,7 @@ func (this *Listener) execute(msg map[string]string) {
 	f, e := os.Create(msg["out"])
 	if e != nil {
 		this.catch(msg, e)
-		return
+		return e
 	}
 
 	defer f.Close()
@@ -62,7 +62,7 @@ func (this *Listener) execute(msg map[string]string) {
 	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)
-		return
+		return e
 	}
 
 	this.proc = cmd.Process
@@ -72,6 +72,7 @@ func (this *Listener) execute(msg map[string]string) {
 		this.catch(msg, e)
 	}
 	this.proc = nil
+	return e
 }
 
 func (this *Listener) run() {
@@ -96,7 +97,10 @@ listenerloop:
 		}
 		msg := make(map[string]string)
 		json.Unmarshal([]byte(job.Body), &msg)
-		this.execute(msg)
+		e = this.execute(msg)
+		if e == nil {
+			log.Printf("COMPLETE: %s", job.Body)
+		}
 		e = this.jobqueue.Delete(job.Id)
 		if e != nil {
 			this.catch(msg, e)

@@ -2,57 +2,118 @@ import cjson
 import os
 import subprocess
 import tempfile
-import time
 import unittest
 
-SIGINT = 2
+from select import select
 
 class TestGlowIntegration(unittest.TestCase):
 
+    def setUp(self):
+        self.listener = Listener()
+
+    def tearDown(self):
+        self.listener.kill()
+        for tube in tubes():
+            drain(tube)
+
     def test_listener_runs_job(self):
         tmpfilename = temporary_file_name()
-        listener = start_listener()
+        self.listener.start()
         subprocess.check_call([glow_executable(), '-tube', 'listener_runs_job', '-out', tmpfilename, '/bin/echo', 'listener_runs_job'])
-        self.wait_for_condition(lambda: os.path.exists(tmpfilename) and os.stat(tmpfilename).st_size > 0)
+        self.listener.wait_for_job_completion({'tube': 'listener_runs_job', 'out': tmpfilename})
         with open(tmpfilename, 'r') as outfile:
             self.assertEqual('listener_runs_job\n', outfile.read())
-        listener.send_signal(SIGINT)
+        self.listener.interrupt()
 
     def test_submit_many_jobs(self):
         tmpfilename1 = temporary_file_name()
         tmpfilename2 = temporary_file_name()
-        listener = start_listener()
+        self.listener.start()
+
         glow = subprocess.Popen([glow_executable()], stdin=subprocess.PIPE)
         print >>glow.stdin, cjson.encode([{'cmd': 'echo submit_many_jobs', 'tube': 'submit_many_jobs', 'out': tmpfilename1 },
                                           {'cmd': 'echo submit_many_jobs', 'tube': 'submit_many_jobs', 'out': tmpfilename2 }])
         glow.stdin.close()
-        self.wait_for_condition(lambda: os.path.exists(tmpfilename1) and os.stat(tmpfilename1).st_size > 0)
+        self.listener.wait_for_job_completion({'tube': 'submit_many_jobs', 'out': tmpfilename1})
+        self.listener.wait_for_job_completion({'tube': 'submit_many_jobs', 'out': tmpfilename2})
+
         with open(tmpfilename1, 'r') as outfile:
             self.assertEqual('submit_many_jobs\n', outfile.read())
-        self.wait_for_condition(lambda: os.path.exists(tmpfilename2) and os.stat(tmpfilename2).st_size > 0)
         with open(tmpfilename2, 'r') as outfile:
             self.assertEqual('submit_many_jobs\n', outfile.read())
-        listener.send_signal(SIGINT)
+        self.listener.interrupt()
 
     def test_listener_finishes_job_on_interrupt(self):
-        pass
+        tmpfilename = temporary_file_name()
+        self.listener.start()
+
+        subprocess.check_call([glow_executable(), '-tube', 'listener_finishes_job_on_interrupt', '-out', tmpfilename, sibling_path('sleepthenecho'), '3',  'listener_finishes_job_on_interrupt'])
+        self.listener.wait_for_job_start({'tube': 'listener_finishes_job_on_interrupt', 'out': tmpfilename})
+
+        self.listener.interrupt()
+        self.listener.wait_for_job_completion({'tube': 'listener_finishes_job_on_interrupt', 'out': tmpfilename}, seconds=10)
+
+        with open(tmpfilename, 'r') as outfile:
+            self.assertEqual('listener_finishes_job_on_interrupt\n', outfile.read())
 
     def test_listener_kills_job_on_kill(self):
-        pass
+        tmpfilename = temporary_file_name()
+        self.listener.start()
+        
+        subprocess.check_call([glow_executable(), '-tube', 'listener_kills_job_on_kill', '-out', tmpfilename, sibling_path('sleepthenecho'), '5',  'listener_kills_job_on_kill'])
+        self.listener.wait_for_job_start({'tube': 'listener_kills_job_on_kill', 'out': tmpfilename})
+        
+        self.listener.kill()
+        self.listener.wait_for_shutdown()
+        
+        with open(tmpfilename, 'r') as outfile:
+            self.assertNotEqual('listener_kills_job_on_kill\n', outfile.read())
     
-    def wait_for_condition(self, cond_f):
-        end_time = time.time() + 3 # seconds
-        while time.time() < end_time:
-            if cond_f():
-                return
-            time.sleep(0.5)
-        self.fail('timed out')
-
 
 debug = False
 
-def start_listener():
-    return subprocess.Popen([glow_executable(), '-listen'], stderr=None if debug else open('/dev/null', 'r'))
+class Listener:
+    def __init__(self):
+        pass
+
+    def start(self):
+        self.process = subprocess.Popen([glow_executable(), '-listen', '-v'], stderr=subprocess.PIPE)
+
+    def interrupt(self):
+        # Send SIGINT
+        self.process.send_signal(2) 
+
+    def kill(self):
+        try:
+            self.process.terminate()
+        except OSError as e:
+            # ignore if 'No such process' (already killed)
+            if e.errno != 3:
+                raise
+
+    def wait_for_shutdown(self):
+        self.process.wait()
+
+    def wait_for_job_start(self, job_desc, seconds=3):
+        self._wait_for_job_update(job_desc, 'RUNNING:', seconds=seconds)
+
+    def wait_for_job_completion(self, job_desc, seconds=3):
+        self._wait_for_job_update(job_desc, 'COMPLETE:', seconds=seconds)
+
+    def _wait_for_job_update(self, job_desc, status, seconds=3, max_num_non_matching_events=10):
+        num_events = 0
+        while num_events < max_num_non_matching_events:
+            fds, _, _ = select([self.process.stderr], [], [], seconds)
+            if fds != [self.process.stderr]:
+                raise Exception('timed out waiting for {0} {1}'.format(status, job_desc))
+            line = self.process.stderr.readline()
+            print line
+            if line.startswith(status):
+                job = cjson.decode(line[len(status):])
+                if all([job[k] == job_desc[k] for k in job_desc]):
+                    return job
+            num_events += 1
+
 
 def temporary_file_name():
     if debug:
@@ -62,5 +123,18 @@ def temporary_file_name():
     else:
         return tempfile.NamedTemporaryFile().name
 
+def sibling_path(filename):
+    directory = os.path.dirname(__file__)
+    return os.path.join(directory if directory else '.', filename)
+
 def glow_executable():
-    return os.path.join(os.path.dirname(__file__), 'glow')
+    return sibling_path('glow')
+
+def tubes():
+    return cjson.decode(subprocess.check_output([glow_executable(), '-stats'])).keys()
+
+def drain(tube):
+    subprocess.check_call([glow_executable(), '-drain', tube])
+    
+if __name__ == '__main__':
+    unittest.main()
