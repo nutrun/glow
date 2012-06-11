@@ -6,13 +6,15 @@ import unittest
 
 from select import select
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+
 class TestGlowIntegration(unittest.TestCase):
 
     def setUp(self):
         for tube in tubes():
             drain(tube)
         self.listener = Listener()
-
+    
     def tearDown(self):
         self.listener.kill()
 
@@ -47,7 +49,7 @@ class TestGlowIntegration(unittest.TestCase):
         tmpfilename = temporary_file_name()
         self.listener.start()
 
-        subprocess.check_call([glow_executable(), '-tube', 'listener_finishes_job_on_interrupt', '-out', tmpfilename, sibling_path('sleepthenecho'), '3',  'listener_finishes_job_on_interrupt'])
+        subprocess.check_call([glow_executable(), '-tube', 'listener_finishes_job_on_interrupt', '-out', tmpfilename, '%s/sleepthenecho' % HERE, '3',  'listener_finishes_job_on_interrupt'])
         self.listener.wait_for_job_start({'tube': 'listener_finishes_job_on_interrupt', 'out': tmpfilename})
 
         self.listener.interrupt()
@@ -60,7 +62,7 @@ class TestGlowIntegration(unittest.TestCase):
         tmpfilename = temporary_file_name()
         self.listener.start()
         
-        subprocess.check_call([glow_executable(), '-tube', 'listener_kills_job_on_kill', '-out', tmpfilename, sibling_path('sleepthenecho'), '5',  'listener_kills_job_on_kill'])
+        subprocess.check_call([glow_executable(), '-tube', 'listener_kills_job_on_kill', '-out', tmpfilename, '%s/sleepthenecho' % HERE, '5',  'listener_kills_job_on_kill'])
         self.listener.wait_for_job_start({'tube': 'listener_kills_job_on_kill', 'out': tmpfilename})
         
         self.listener.kill()
@@ -126,12 +128,8 @@ def temporary_file_name():
     else:
         return tempfile.NamedTemporaryFile().name
 
-def sibling_path(filename):
-    directory = os.path.dirname(__file__)
-    return os.path.join(directory if directory else '.', filename)
-
 def glow_executable():
-    return sibling_path('glow')
+    return '%s/glow' % HERE
 
 def tubes():
     return cjson.decode(subprocess.check_output([glow_executable(), '-stats'])).keys()
