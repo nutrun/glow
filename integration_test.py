@@ -112,7 +112,7 @@ class Listener:
             if fds != [self.process.stderr]:
                 raise Exception('timed out waiting for {0} {1}'.format(status, job_desc))
             line = self.process.stderr.readline()
-            print line
+            if debug: print line
             if line.startswith(status):
                 job = cjson.decode(line[len(status):])
                 if all([job[k] == job_desc[k] for k in job_desc]):
