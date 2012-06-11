@@ -75,11 +75,26 @@ class TestGlowIntegration(unittest.TestCase):
             # ignore if file was never created
             if e.errno != 2: raise
 
+    def test_unexecable_job_fails_with_error(self):
+        self.assertFalse('GLOW_ERRORS' in tubes())
+        self.listener.start()
+        subprocess.check_call([glow_executable(), '-tube', 'unexecable_job_fails_with_error', '/nonexistent/executable'])
+        self.listener.wait_for_job_failure({'tube': 'unexecable_job_fails_with_error', 'cmd':  '/nonexistent/executable'})
+        self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
+    
+    def test_nonzero_exitstatus_fails_with_error(self):
+        self.assertFalse('GLOW_ERRORS' in tubes())
+        self.listener.start()
+        subprocess.check_call([glow_executable(), '-tube', 'nonzero_exitstatus_fails_with_error', 'cat', '/nonexistent/file'])
+        self.listener.wait_for_job_failure({'tube': 'nonzero_exitstatus_fails_with_error', 'cmd':  'cat /nonexistent/file'})
+        self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
+    
+
 debug = False
 
 class Listener:
     def __init__(self):
-        pass
+        self.process = None
 
     def start(self):
         self.process = subprocess.Popen([glow_executable(), '-listen', '-v'], stderr=subprocess.PIPE)
@@ -89,12 +104,13 @@ class Listener:
         self.process.send_signal(2) 
 
     def kill(self):
-        try:
-            self.process.terminate()
-        except OSError as e:
-            # ignore if 'No such process' (already killed)
-            if e.errno != 3:
-                raise
+        if self.process:
+            try:
+                self.process.terminate()
+            except OSError as e:
+                # ignore if 'No such process' (already killed)
+                if e.errno != 3:
+                    raise
 
     def wait_for_shutdown(self):
         self.process.wait()
@@ -104,6 +120,9 @@ class Listener:
 
     def wait_for_job_completion(self, job_desc, seconds=3):
         self._wait_for_job_update(job_desc, 'COMPLETE:', seconds)
+
+    def wait_for_job_failure(self, job_desc, seconds=3):
+        self._wait_for_job_update(job_desc, 'FAILED:', seconds)
 
     def _wait_for_job_update(self, job_desc, status, seconds, max_num_non_matching_events=10):
         num_events = 0
@@ -132,10 +151,13 @@ def glow_executable():
     return '%s/glow' % HERE
 
 def tubes():
-    return cjson.decode(subprocess.check_output([glow_executable(), '-stats'])).keys()
+    return cjson.decode(subprocess.check_output([glow_executable(), '-stats']))
 
 def drain(tube):
     subprocess.check_call([glow_executable(), '-drain', tube])
+
+
     
 if __name__ == '__main__':
+    # this works, but nose is better
     unittest.main()

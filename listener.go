@@ -92,15 +92,23 @@ listenerloop:
 			}
 			log.Fatal(e)
 		}
+		// Copy the job body because it appears to be getting corrupted in this.q.Use inside publishError()
+		job_desc := string(job.Body)
 		if this.verbose {
-			log.Printf("RUNNING: %s", job.Body)
+			log.Printf("RUNNING: %s", job_desc)
 		}
 		msg := make(map[string]string)
 		json.Unmarshal([]byte(job.Body), &msg)
 		e = this.execute(msg)
 		if e == nil {
-			log.Printf("COMPLETE: %s", job.Body)
+			log.Printf("COMPLETE: %s", job_desc)
+		} else {
+			log.Printf("FAILED: %s", job_desc)
 		}
+		// Weird corruption problem - this is getting hit on job failure
+		// if job_desc != string(job.Body) {
+		// 	log.Fatalf("body has changed!")
+		// }
 		e = this.jobqueue.Delete(job.Id)
 		if e != nil {
 			this.catch(msg, e)

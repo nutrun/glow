@@ -95,7 +95,7 @@ func queryTubes(q *lentil.Beanstalkd) (map[string]*Tube, error) {
 		return nil, e
 	}
 	for _, tube := range names {
-		if tube == "default" || tube == Config.errorQueue {
+		if tube == "default" {
 			continue
 		}
 		tubestats, e := q.StatsTube(tube)
