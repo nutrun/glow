@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nutrun/lentil"
 	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"github.com/nutrun/lentil"
 )
 
 type Client struct {

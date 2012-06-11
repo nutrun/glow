@@ -27,6 +27,12 @@ class TestGlowIntegration(unittest.TestCase):
             self.assertEqual('listener_runs_job\n', outfile.read())
         self.listener.interrupt()
 
+    def test_local_runs_job(self):
+        tmpfilename = temporary_file_name()
+        subprocess.check_call([glow_executable(), '-local', '-out', tmpfilename, '/bin/echo', 'local_runs_job'])
+        with open(tmpfilename, 'r') as outfile:
+            self.assertEqual('local_runs_job\n', outfile.read())
+
     def test_submit_many_jobs(self):
         tmpfilename1 = temporary_file_name()
         tmpfilename2 = temporary_file_name()
@@ -88,6 +94,13 @@ class TestGlowIntegration(unittest.TestCase):
         subprocess.check_call([glow_executable(), '-tube', 'nonzero_exitstatus_fails_with_error', 'cat', '/nonexistent/file'])
         self.listener.wait_for_job_failure({'tube': 'nonzero_exitstatus_fails_with_error', 'cmd':  'cat /nonexistent/file'})
         self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
+
+    def test_local_job_failure(self):
+        self.assertFalse('GLOW_ERRORS' in tubes())
+        returncode = subprocess.call([glow_executable(), '-local', 'cat', '/nonexistent/file'], stderr=open('/dev/null', 'w'))
+        self.assertNotEqual(0, returncode)
+        self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
+
     
 
 debug = False

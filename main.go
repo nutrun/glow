@@ -20,6 +20,7 @@ var verbose *bool = flag.Bool("v", false, "Increase verbosity")
 var exclude *string = flag.String("exclude", "", "Tubes to ignore (comma separated) [listen]")
 var priority *int = flag.Int("pri", 0, "Job priority (smaller runs first) [submit]")
 var delay *int = flag.Int("delay", 0, "Job delay in seconds [submit]")
+var local *bool = flag.Bool("local", false, "Run locally, reporting errors to the configured beanstalk")
 
 func main() {
 	log.SetFlags(0)
@@ -35,33 +36,43 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 		l.run()
-	} else if *drain != "" {
-		c, e := NewClient(*verbose)
+		return
+	} else if *help {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	if *local {
+		msg := make(map[string]string)
+		msg["cmd"] = command()
+		msg["mailto"] = *mailto
+		msg["workdir"] = *workdir
+		msg["out"] = *out
+		runner, e := NewRunner()
+		e = runner.execute(msg)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
+		return
+	}
+
+	c, e := NewClient(*verbose)
+	if e != nil {
+		log.Fatalf("ERROR: %s", e.Error())
+	}
+	
+	if *drain != "" {
 		e = c.drain(*drain)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 	} else if *stats {
-		c, e := NewClient(*verbose)
-		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
-		}
 		e = c.stats()
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
-	} else if *help {
-		flag.Usage()
-		os.Exit(1)
 	} else if len(flag.Args()) == 0 { // Queue up many jobs from STDIN
 		in := bufio.NewReaderSize(os.Stdin, 1024*1024)
-		c, e := NewClient(*verbose)
-		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
-		}
 		input := make([]byte, 0)
 		for {
 			line, e := in.ReadSlice('\n')
@@ -78,14 +89,13 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 	} else { // Queue up one job
-		c, e := NewClient(*verbose)
-		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
-		}
-		cmd := strings.Join(flag.Args(), " ")
-		e = c.put(cmd, *mailto, *workdir, *out, *tube, *priority, *delay)
+		e = c.put(command(), *mailto, *workdir, *out, *tube, *priority, *delay)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 	}
+}
+
+func command() string {
+	return strings.Join(flag.Args(), " ")
 }
