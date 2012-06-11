@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/nutrun/lentil"
 	"strconv"
 	"strings"
+	"github.com/nutrun/lentil"
 )
 
 type JobQueue struct {
@@ -63,8 +63,11 @@ func (this *JobQueue) Delete(id uint64) error {
 }
 
 func (this *JobQueue) MarshalJSON() ([]byte, error) {
-	this.refreshTubes()
-	return json.Marshal(this.tubes)
+	tubes, err := queryTubes(this.q)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(tubes)
 }
 
 func (this *JobQueue) Include(tube string) bool {
@@ -77,23 +80,32 @@ func (this *JobQueue) Include(tube string) bool {
 }
 
 func (this *JobQueue) refreshTubes() error {
-	this.tubes = make(map[string]*Tube)
-	names, e := this.q.ListTubes()
+	tubes, err := queryTubes(this.q)
+	if err == nil {
+		delete(tubes, Config.errorQueue)
+		this.tubes = tubes
+	}
+	return err
+}
+
+func queryTubes(q *lentil.Beanstalkd) (map[string]*Tube, error) {
+	tubes := make(map[string]*Tube)
+	names, e := q.ListTubes()
 	if e != nil {
-		return e
+		return nil, e
 	}
 	for _, tube := range names {
 		if tube == "default" || tube == Config.errorQueue {
 			continue
 		}
-		tubestats, e := this.q.StatsTube(tube)
+		tubestats, e := q.StatsTube(tube)
 		if e != nil {
-			return e
+			return nil, e
 		}
 		ready, _ := strconv.Atoi(tubestats["current-jobs-ready"])
 		reserved, _ := strconv.Atoi(tubestats["current-jobs-reserved"])
 		delayed, _ := strconv.Atoi(tubestats["current-jobs-delayed"])
-		this.tubes[tube] = NewTube(tube, uint(reserved), uint(ready), uint(delayed))
+		tubes[tube] = NewTube(tube, uint(reserved), uint(ready), uint(delayed))
 	}
-	return nil
+	return tubes, nil
 }
