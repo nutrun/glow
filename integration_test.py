@@ -100,12 +100,12 @@ class Listener:
         self.process.wait()
 
     def wait_for_job_start(self, job_desc, seconds=3):
-        self._wait_for_job_update(job_desc, 'RUNNING:', seconds=seconds)
+        self._wait_for_job_update(job_desc, 'RUNNING:', seconds)
 
     def wait_for_job_completion(self, job_desc, seconds=3):
-        self._wait_for_job_update(job_desc, 'COMPLETE:', seconds=seconds)
+        self._wait_for_job_update(job_desc, 'COMPLETE:', seconds)
 
-    def _wait_for_job_update(self, job_desc, status, seconds=3, max_num_non_matching_events=10):
+    def _wait_for_job_update(self, job_desc, status, seconds, max_num_non_matching_events=10):
         num_events = 0
         while num_events < max_num_non_matching_events:
             fds, _, _ = select([self.process.stderr], [], [], seconds)
