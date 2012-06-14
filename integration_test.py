@@ -101,6 +101,12 @@ class TestGlowIntegration(unittest.TestCase):
         self.assertNotEqual(0, returncode)
         self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
 
+
+    def test_unexecable_local_job_failure(self):
+        self.assertFalse('GLOW_ERRORS' in tubes())
+        returncode = subprocess.call([glow_executable(), '-local', '/nonexistent/executable'], stderr=open('/dev/null', 'w'))
+        self.assertNotEqual(0, returncode)
+        self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
     
 
 debug = False
