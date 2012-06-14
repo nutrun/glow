@@ -49,6 +49,9 @@ func main() {
 		msg["workdir"] = *workdir
 		msg["out"] = *out
 		runner, e := NewRunner()
+		if e != nil {
+			log.Fatal(e)
+		}
 		e = runner.execute(msg)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
