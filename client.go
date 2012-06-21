@@ -125,6 +125,7 @@ func (this *Client) drain(tube string) error {
 			return err
 		}
 		for job, err := this.q.ReserveWithTimeout(0); err == nil; job, err = this.q.ReserveWithTimeout(0) {
+			log.Printf("DRAINED: %s", job.Body)
 			this.q.Delete(job.Id)
 		}
 		if err != nil {
