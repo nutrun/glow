@@ -13,8 +13,8 @@ import (
 )
 
 type Runner struct {
-	q        *lentil.Beanstalkd
-	proc     *os.Process
+	q    *lentil.Beanstalkd
+	proc *os.Process
 }
 
 func NewRunner() (*Runner, error) {
@@ -29,7 +29,7 @@ func NewRunner() (*Runner, error) {
 	return this, nil
 }
 
-func (this *Runner) execute(msg map[string]string) error{
+func (this *Runner) execute(msg map[string]string) error {
 	workdir := msg["workdir"]
 	e := os.Chdir(workdir)
 	if e != nil {
@@ -94,6 +94,9 @@ func (this *Runner) publishError(msg map[string]string, e error) {
 }
 
 func (this *Runner) readLog(msg map[string]string) string {
+	if msg["out"] == "/dev/stdout" || msg["out"] == "/dev/stderr" {
+		return ""
+	}
 	content := make([]byte, 0)
 	info, err := os.Stat(msg["out"])
 	if err != nil {

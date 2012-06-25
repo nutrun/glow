@@ -63,7 +63,7 @@ func main() {
 	if e != nil {
 		log.Fatalf("ERROR: %s", e.Error())
 	}
-	
+
 	if *drain != "" {
 		e = c.drain(*drain)
 		if e != nil {

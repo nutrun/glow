@@ -6,6 +6,11 @@ import (
 	"os"
 )
 
+const (
+	DEFAULT_QUEUE_ADDR = "0.0.0.0:11300"
+	DEFAULT_FROM_EMAIL = "glow@example.com"
+)
+
 type Configuration struct {
 	QueueAddr      string
 	SmtpServerAddr string
@@ -18,12 +23,12 @@ func NewConfig() *Configuration {
 	config := new(Configuration)
 	config.QueueAddr = os.Getenv("GLOW_QUEUE")
 	if config.QueueAddr == "" {
-		config.QueueAddr = "0.0.0.0:11300"
+		config.QueueAddr = DEFAULT_QUEUE_ADDR
 	}
 	config.SmtpServerAddr = os.Getenv("GLOW_SMTP_SERVER")
 	config.MailFrom = os.Getenv("GLOW_MAIL_FROM")
 	if config.MailFrom == "" {
-		config.MailFrom = "glow@example.com"
+		config.MailFrom = DEFAULT_FROM_EMAIL
 	}
 	config.errorQueue = "GLOW_ERRORS"
 	return config
