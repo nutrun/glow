@@ -52,8 +52,11 @@ listenerloop:
 		if this.verbose {
 			log.Printf("RUNNING: %s", job.Body)
 		}
-		msg := make(map[string]string)
-		json.Unmarshal([]byte(job.Body), &msg)
+		msg := make(map[string]interface{})
+		e = json.Unmarshal([]byte(job.Body), &msg)
+        if e != nil {
+            this.catch(msg, e)
+        }
 		e = this.execute(msg)
 		if e == nil {
 			log.Printf("COMPLETE: %s", job.Body)

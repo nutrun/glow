@@ -28,22 +28,47 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-func (this *Client) put(cmd, mailto, workdir, out, tube string, priority, delay int) error {
-	msg := make(map[string]string)
-	msg["cmd"] = cmd
-	msg["mailto"] = mailto
-	msg["tube"] = tube
+func isValidMessage(msg map[string]interface{}) error {
+    _, found_executable := msg["executable"]
+    _, found_cmd := msg["cmd"]
+    if found_executable && found_cmd {
+        return errors.New("Found both executable and cmd in message. Don't know which one to use")
+    }
+    if !found_executable && !found_cmd {
+        return errors.New("Neither executable nor cmd field provided in message")
+    }
+    return nil
+}
+
+func (this *Client) put(cmd, executable string, arguments []string, mailto, workdir, out, tube string, priority, delay int) error {
+    msg := make(map[string]interface{})
+    msg["cmd"] = cmd
+
+	msg["executable"] = executable
+
+    argument_json, e := json.Marshal(arguments)
+    if e != nil {
+        panic(e)
+    }
+	msg["arguments"] = string(argument_json)
+
+    msg["tube"] = tube
 	msg["pri"] = fmt.Sprintf("%d", priority) // Not used except for debugging
 	if tube == "" {
 		return errors.New("Missing required param -tube")
 	}
 	msg["delay"] = fmt.Sprintf("%d", delay) // Not used except for debugging
-	workdir, e := filepath.Abs(workdir)
+	workdir, e = filepath.Abs(workdir)
 	if e != nil {
 		return e
 	}
 	msg["workdir"] = workdir
 	msg["out"] = out
+
+    if e = isValidMessage(msg); e != nil {
+        return e
+    }
+
 	message, e := json.Marshal(msg)
 	if this.verbose {
 		log.Printf("QUEUEING UP: %s\n", message)
@@ -62,22 +87,25 @@ func (this *Client) put(cmd, mailto, workdir, out, tube string, priority, delay 
 }
 
 func (this *Client) putMany(input []byte) error {
-	jobs := make([]map[string]string, 0)
+	jobs := make([]map[string]interface{}, 0)
 	e := json.Unmarshal(input, &jobs)
 	if e != nil {
 		return e
 	}
 	for _, job := range jobs {
+        if e := isValidMessage(job); e != nil {
+            panic(e)
+        }
 		priority := 0
 		if priorityStr, exists := job["pri"]; exists {
-			priority, e = strconv.Atoi(priorityStr)
+			priority, e = strconv.Atoi(priorityStr.(string))
 			if e != nil {
 				return e
 			}
 		}
 		delay := 0
 		if delayStr, exists := job["delay"]; exists {
-			delay, e = strconv.Atoi(delayStr)
+			delay, e = strconv.Atoi(delayStr.(string))
 			if e != nil {
 				return e
 			}
@@ -89,9 +117,12 @@ func (this *Client) putMany(input []byte) error {
 		workdir := "/tmp"
 		dir, exists := job["workdir"]
 		if exists {
-			workdir = dir
+			workdir = dir.(string)
 		}
-		e = this.put(job["cmd"], job["mailto"], workdir, out, job["tube"], priority, delay)
+
+		e = this.put(job["cmd"].(string), job["executable"].(string), job["arguments"].([]string),
+                     job["mailto"].(string), workdir, out.(string), job["tube"].(string),
+                     priority, delay)
 		if e != nil {
 			return e
 		}

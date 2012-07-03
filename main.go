@@ -43,7 +43,7 @@ func main() {
 	}
 
 	if *local {
-		msg := make(map[string]string)
+		msg := make(map[string]interface{})
 		msg["cmd"] = command()
 		msg["mailto"] = *mailto
 		msg["workdir"] = *workdir
@@ -92,7 +92,7 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 	} else { // Queue up one job
-		e = c.put(command(), *mailto, *workdir, *out, *tube, *priority, *delay)
+		e = c.put(command(), "", make([]string, 0), *mailto, *workdir, *out, *tube, *priority, *delay)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
