@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"github.com/nutrun/lentil"
 )
@@ -28,44 +27,33 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-func isValidMessage(msg map[string]interface{}) error {
-    _, found_executable := msg["executable"]
-    _, found_cmd := msg["cmd"]
-    if found_executable && found_cmd {
+type Message struct {
+    Command     string      `json:command`
+    Executable  string      `json:executable`
+    Arguments   []string    `json:arguments`
+    Mailto      string      `json:mailto`
+    Workdir     string      `json:workdir`
+    Out         string      `json:out`
+    Tube        string      `json:tube`
+    Priority    int         `json:priority`
+    Delay       int         `json:delay`
+}
+
+func isValidMessage(msg *Message) error {
+    if msg.Command != "" && msg.Executable != "" {
         return errors.New("Found both executable and cmd in message. Don't know which one to use")
     }
-    if !found_executable && !found_cmd {
+    if msg.Command == "" && msg.Executable == "" {
         return errors.New("Neither executable nor cmd field provided in message")
+    }
+    if msg.Tube == "" {
+		return errors.New("Missing required param -tube")
     }
     return nil
 }
 
-func (this *Client) put(cmd, executable string, arguments []string, mailto, workdir, out, tube string, priority, delay int) error {
-    msg := make(map[string]interface{})
-    msg["cmd"] = cmd
-
-	msg["executable"] = executable
-
-    argument_json, e := json.Marshal(arguments)
-    if e != nil {
-        panic(e)
-    }
-	msg["arguments"] = string(argument_json)
-
-    msg["tube"] = tube
-	msg["pri"] = fmt.Sprintf("%d", priority) // Not used except for debugging
-	if tube == "" {
-		return errors.New("Missing required param -tube")
-	}
-	msg["delay"] = fmt.Sprintf("%d", delay) // Not used except for debugging
-	workdir, e = filepath.Abs(workdir)
-	if e != nil {
-		return e
-	}
-	msg["workdir"] = workdir
-	msg["out"] = out
-
-    if e = isValidMessage(msg); e != nil {
+func (this *Client) put_message(msg *Message) error {
+    if e := isValidMessage(msg); e != nil {
         return e
     }
 
@@ -76,18 +64,27 @@ func (this *Client) put(cmd, executable string, arguments []string, mailto, work
 	if e != nil {
 		return e
 	}
-	if tube != "default" {
-		e = this.q.Use(tube)
+	if msg.Tube != "default" {
+		e = this.q.Use(msg.Tube)
 		if e != nil {
 			return e
 		}
 	}
-	_, e = this.q.Put(priority, delay, 60*60, message) // An hour TTR?
+	_, e = this.q.Put(msg.Priority, msg.Delay, 60*60, message) // An hour TTR?
 	return e
 }
 
+func (this *Client) put(cmd, executable string, arguments []string, mailto string, workdir, out, tube string, priority, delay int) error {
+    workdir, e := filepath.Abs(workdir)
+	if e != nil {
+		return e
+	}
+    msg := &Message{cmd, executable, arguments, mailto, workdir, out, tube, priority, delay}
+    return this.put_message(msg)
+}
+
 func (this *Client) putMany(input []byte) error {
-	jobs := make([]map[string]interface{}, 0)
+	jobs := make([]*Message, 0)
 	e := json.Unmarshal(input, &jobs)
 	if e != nil {
 		return e
@@ -96,33 +93,14 @@ func (this *Client) putMany(input []byte) error {
         if e := isValidMessage(job); e != nil {
             panic(e)
         }
-		priority := 0
-		if priorityStr, exists := job["pri"]; exists {
-			priority, e = strconv.Atoi(priorityStr.(string))
-			if e != nil {
-				return e
-			}
-		}
-		delay := 0
-		if delayStr, exists := job["delay"]; exists {
-			delay, e = strconv.Atoi(delayStr.(string))
-			if e != nil {
-				return e
-			}
-		}
-		out, exists := job["out"]
-		if !exists {
-			out = "/dev/null"
-		}
-		workdir := "/tmp"
-		dir, exists := job["workdir"]
-		if exists {
-			workdir = dir.(string)
-		}
+        if job.Out == "" {
+            job.Out = "/dev/null"
+        }
+		if job.Workdir == "" {
+            job.Workdir = "/tmp"
+        }
 
-		e = this.put(job["cmd"].(string), job["executable"].(string), job["arguments"].([]string),
-                     job["mailto"].(string), workdir, out.(string), job["tube"].(string),
-                     priority, delay)
+		e = this.put_message(job)
 		if e != nil {
 			return e
 		}
