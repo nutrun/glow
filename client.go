@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/nutrun/lentil"
 	"log"
 	"strings"
-	"github.com/nutrun/lentil"
 )
 
 type Client struct {
@@ -26,12 +26,12 @@ func NewClient(verbose bool) (*Client, error) {
 }
 
 func (this *Client) put(msg *Message) error {
-    if e := msg.sanitize(); e != nil {
-        return e
-    }
-    if e := msg.isValid(); e != nil {
-        return e
-    }
+	if e := msg.sanitize(); e != nil {
+		return e
+	}
+	if e := msg.isValid(); e != nil {
+		return e
+	}
 
 	message, e := json.Marshal(msg)
 	if this.verbose {
@@ -57,7 +57,7 @@ func (this *Client) putMany(input []byte) error {
 		return e
 	}
 	for _, job := range jobs {
-        e = this.put(job)
+		e = this.put(job)
 		if e != nil {
 			return e
 		}

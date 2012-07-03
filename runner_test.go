@@ -41,9 +41,9 @@ func TestRunnerShouldPutErrorOnBeanstalk(t *testing.T) {
 	}
 	result := new(GlerrMessage)
 	err = json.Unmarshal(failed.Body, result)
-    if err != nil {
-        t.Fatal(err)
-    }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if result.Cmd != "lsdonmybrain" {
 		t.Errorf("Recieved Unexpected Msg [%v]", string(failed.Body))
 	}

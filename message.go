@@ -1,50 +1,50 @@
 package main
 
 import (
-    "path/filepath"
-    "strings"
-    "errors"
-    "os"
-    "fmt"
-    "io/ioutil"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Message struct {
-    Executable  string      `json:"executable"`
-    Arguments   []string    `json:"arguments"`
-    Mailto      string      `json:"mailto"`
-    Workdir     string      `json:"workdir"`
-    Out         string      `json:"out"`
-    Tube        string      `json:"tube"`
-    Priority    int         `json:"priority"`
-    Delay       int         `json:"delay"`
+	Executable string   `json:"executable"`
+	Arguments  []string `json:"arguments"`
+	Mailto     string   `json:"mailto"`
+	Workdir    string   `json:"workdir"`
+	Out        string   `json:"out"`
+	Tube       string   `json:"tube"`
+	Priority   int      `json:"priority"`
+	Delay      int      `json:"delay"`
 }
 
 func (this *Message) sanitize() error {
-    if this.Out == "" {
-        this.Out = "/dev/null"
-    }
-    if this.Workdir == "" {
-        this.Workdir = "/tmp"
-    }
-    absoluteWorkdir, e := filepath.Abs(this.Workdir)
-    this.Workdir = absoluteWorkdir
-    return e
+	if this.Out == "" {
+		this.Out = "/dev/null"
+	}
+	if this.Workdir == "" {
+		this.Workdir = "/tmp"
+	}
+	absoluteWorkdir, e := filepath.Abs(this.Workdir)
+	this.Workdir = absoluteWorkdir
+	return e
 }
 
 func (this *Message) isValid() error {
-    if this.Tube == "" {
+	if this.Tube == "" {
 		return errors.New("Missing required param -tube")
-    }
-    return nil
+	}
+	return nil
 }
 
 func (this *Message) getCommand() string {
-    cmd := this.Executable
-    if len(this.Arguments) > 0 {
-        cmd += " " + strings.Join(this.Arguments, " ")
-    }
-    return cmd
+	cmd := this.Executable
+	if len(this.Arguments) > 0 {
+		cmd += " " + strings.Join(this.Arguments, " ")
+	}
+	return cmd
 }
 
 func (this *Message) readOut() string {
@@ -70,12 +70,12 @@ func (this *Message) readOut() string {
 }
 
 type GlerrMessage struct {
-    Cmd         string  `json:"cmd"`
-    Error       string  `json:"error"`
-    Log         string  `json:"log"`
-    Message
+	Cmd   string `json:"cmd"`
+	Error string `json:"error"`
+	Log   string `json:"log"`
+	Message
 }
 
 func NewGlerrMessage(msg *Message, e error) *GlerrMessage {
-    return &GlerrMessage{msg.getCommand(), e.Error(), msg.readOut(), *msg}
+	return &GlerrMessage{msg.getCommand(), e.Error(), msg.readOut(), *msg}
 }

@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/nutrun/lentil"
 	"strconv"
 	"strings"
-	"github.com/nutrun/lentil"
 )
 
 type JobQueue struct {

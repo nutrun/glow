@@ -54,9 +54,9 @@ listenerloop:
 		}
 		msg := new(Message)
 		e = json.Unmarshal([]byte(job.Body), &msg)
-        if e != nil {
-            this.catch(msg, e)
-        }
+		if e != nil {
+			this.catch(msg, e)
+		}
 		e = this.execute(msg)
 		if e == nil {
 			log.Printf("COMPLETE: %s", job.Body)

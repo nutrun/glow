@@ -36,7 +36,7 @@ func (this *Runner) execute(msg *Message) error {
 		return e
 	}
 
-    cmd := exec.Command(msg.Executable, msg.Arguments...)
+	cmd := exec.Command(msg.Executable, msg.Arguments...)
 
 	f, e := os.Create(msg.Out)
 	if e != nil {
@@ -90,7 +90,7 @@ func (this *Runner) publishError(msg *Message, e error) {
 }
 
 func (this *Runner) mail(msg *Message, e error) {
-    if Config.SmtpServerAddr == "" {
+	if Config.SmtpServerAddr == "" {
 		return
 	}
 	if len(msg.Mailto) < 1 { //no email addresses
