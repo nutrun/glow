@@ -43,11 +43,8 @@ func main() {
 	}
 
 	if *local {
-		msg := make(map[string]interface{})
-		msg["cmd"] = command()
-		msg["mailto"] = *mailto
-		msg["workdir"] = *workdir
-		msg["out"] = *out
+        executable, arguments := parse_command()
+        msg := &Message{executable, arguments, *mailto, *workdir, *out, "", 0, 0}
 		runner, e := NewRunner()
 		if e != nil {
 			log.Fatal(e)
@@ -92,13 +89,14 @@ func main() {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 	} else { // Queue up one job
-		e = c.put(command(), "", make([]string, 0), *mailto, *workdir, *out, *tube, *priority, *delay)
+        executable, arguments := parse_command()
+		e = c.put(&Message{executable, arguments, *mailto, *workdir, *out, *tube, *priority, *delay})
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
 	}
 }
 
-func command() string {
-	return strings.Join(flag.Args(), " ")
+func parse_command() (string, []string) {
+    return flag.Args()[0], flag.Args()[1:len(flag.Args())]
 }

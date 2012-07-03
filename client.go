@@ -3,10 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
-	"path/filepath"
 	"strings"
 	"github.com/nutrun/lentil"
 )
@@ -27,33 +25,11 @@ func NewClient(verbose bool) (*Client, error) {
 	return this, nil
 }
 
-type Message struct {
-    Command     string      `json:command`
-    Executable  string      `json:executable`
-    Arguments   []string    `json:arguments`
-    Mailto      string      `json:mailto`
-    Workdir     string      `json:workdir`
-    Out         string      `json:out`
-    Tube        string      `json:tube`
-    Priority    int         `json:priority`
-    Delay       int         `json:delay`
-}
-
-func isValidMessage(msg *Message) error {
-    if msg.Command != "" && msg.Executable != "" {
-        return errors.New("Found both executable and cmd in message. Don't know which one to use")
+func (this *Client) put(msg *Message) error {
+    if e := msg.sanitize(); e != nil {
+        return e
     }
-    if msg.Command == "" && msg.Executable == "" {
-        return errors.New("Neither executable nor cmd field provided in message")
-    }
-    if msg.Tube == "" {
-		return errors.New("Missing required param -tube")
-    }
-    return nil
-}
-
-func (this *Client) put_message(msg *Message) error {
-    if e := isValidMessage(msg); e != nil {
+    if e := msg.isValid(); e != nil {
         return e
     }
 
@@ -74,15 +50,6 @@ func (this *Client) put_message(msg *Message) error {
 	return e
 }
 
-func (this *Client) put(cmd, executable string, arguments []string, mailto string, workdir, out, tube string, priority, delay int) error {
-    workdir, e := filepath.Abs(workdir)
-	if e != nil {
-		return e
-	}
-    msg := &Message{cmd, executable, arguments, mailto, workdir, out, tube, priority, delay}
-    return this.put_message(msg)
-}
-
 func (this *Client) putMany(input []byte) error {
 	jobs := make([]*Message, 0)
 	e := json.Unmarshal(input, &jobs)
@@ -90,17 +57,7 @@ func (this *Client) putMany(input []byte) error {
 		return e
 	}
 	for _, job := range jobs {
-        if e := isValidMessage(job); e != nil {
-            panic(e)
-        }
-        if job.Out == "" {
-            job.Out = "/dev/null"
-        }
-		if job.Workdir == "" {
-            job.Workdir = "/tmp"
-        }
-
-		e = this.put_message(job)
+        e = this.put(job)
 		if e != nil {
 			return e
 		}

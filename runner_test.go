@@ -11,10 +11,7 @@ import (
 
 func TestRunnerOutput(t *testing.T) {
 	runner := new(Runner)
-	msg := make(map[string]string)
-	msg["cmd"] = "echo you suck"
-	msg["out"] = "test.out"
-	msg["workdir"] = "."
+	msg := createTestMessage("echo you suck", "test.out", ".")
 	runner.execute(msg)
 	out, e := ioutil.ReadFile("test.out")
 	if e != nil {
@@ -35,20 +32,20 @@ func TestRunnerShouldPutErrorOnBeanstalk(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.SetOutput(bytes.NewBufferString(""))
-	msg := make(map[string]string)
-	msg["cmd"] = "lsdonmybrain"
-	msg["out"] = "test.out"
-	msg["workdir"] = "."
+	msg := createTestMessage("lsdonmybrain", "test.out", ".")
 	runner.execute(msg)
 	runner.q.Watch(Config.errorQueue)
 	failed, err := runner.q.ReserveWithTimeout(0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result := make(map[string]string)
-	err = json.Unmarshal(failed.Body, &result)
-	if result["cmd"] != "lsdonmybrain" {
-		t.Errorf("Recieved Unexpected Msg [%v]", failed.Body)
+	result := new(GlerrMessage)
+	err = json.Unmarshal(failed.Body, result)
+    if err != nil {
+        t.Fatal(err)
+    }
+	if result.Cmd != "lsdonmybrain" {
+		t.Errorf("Recieved Unexpected Msg [%v]", string(failed.Body))
 	}
 	runner.q.Delete(failed.Id)
 	err = os.Remove("test.out")
