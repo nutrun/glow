@@ -40,8 +40,8 @@ class TestGlowIntegration(unittest.TestCase):
 
         glow = subprocess.Popen([glow_executable()], stdin=subprocess.PIPE)
         print >>glow.stdin, cjson.encode([
-                    {'cmd': 'echo', 'arguments': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'out': tmpfilename1 },
-                    {'cmd': 'echo', 'arguments': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'out': tmpfilename2 }
+                    {'cmd': 'echo', 'args': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'out': tmpfilename1 },
+                    {'cmd': 'echo', 'args': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'out': tmpfilename2 }
                 ])
         glow.stdin.close()
         self.listener.wait_for_job_completion({'tube': 'submit_many_jobs', 'out': tmpfilename1})
@@ -95,7 +95,7 @@ class TestGlowIntegration(unittest.TestCase):
         self.listener.start()
         subprocess.check_call([glow_executable(), '-tube', 'nonzero_exitstatus_fails_with_error', 'cat', '/nonexistent/file'])
         self.listener.wait_for_job_failure({'tube': 'nonzero_exitstatus_fails_with_error', 'cmd': 'cat',
-                                            'arguments': ['/nonexistent/file']})
+                                            'args': ['/nonexistent/file']})
         self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
 
     def test_local_job_failure(self):
