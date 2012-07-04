@@ -11,7 +11,7 @@ import (
 
 type Message struct {
 	Executable string   `json:"cmd"`
-	Arguments  []string `json:"arguments"`
+	Arguments  []string `json:"args"`
 	Mailto     string   `json:"mailto"`
 	Workdir    string   `json:"workdir"`
 	Out        string   `json:"out"`
