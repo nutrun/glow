@@ -10,13 +10,13 @@ import (
 )
 
 type Message struct {
-	Executable string   `json:"executable"`
+	Executable string   `json:"cmd"`
 	Arguments  []string `json:"arguments"`
 	Mailto     string   `json:"mailto"`
 	Workdir    string   `json:"workdir"`
 	Out        string   `json:"out"`
 	Tube       string   `json:"tube"`
-	Priority   int      `json:"priority"`
+	Priority   int      `json:"pri"`
 	Delay      int      `json:"delay"`
 }
 
