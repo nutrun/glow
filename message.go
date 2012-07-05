@@ -73,9 +73,8 @@ type GlerrMessage struct {
 	Cmd   string `json:"cmd"`
 	Error string `json:"error"`
 	Log   string `json:"log"`
-	Message
 }
 
 func NewGlerrMessage(msg *Message, e error) *GlerrMessage {
-	return &GlerrMessage{msg.getCommand(), e.Error(), msg.readOut(), *msg}
+	return &GlerrMessage{msg.getCommand(), e.Error(), msg.readOut()}
 }
