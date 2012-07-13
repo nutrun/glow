@@ -80,8 +80,8 @@ func (this *Client) stats() error {
 	return nil
 }
 
-func (this *Client) drain(tube string) error {
-	for _, tube := range strings.Split(tube, ",") {
+func (this *Client) drain(tubes string) error {
+	for _, tube := range strings.Split(tubes, ",") {
 		_, err := this.q.Watch(tube)
 		if err != nil {
 			return err
@@ -97,6 +97,17 @@ func (this *Client) drain(tube string) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (this *Client) pause(tubes string, delay int) error {
+	for _, tube := range strings.Split(tubes, ",") {
+		e := this.q.PauseTube(tube, delay)
+		if e != nil {
+			return e
+		}
+		log.Printf("Paused %s for %d seconds", tubes, delay)
 	}
 	return nil
 }

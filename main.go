@@ -21,6 +21,8 @@ var exclude *string = flag.String("exclude", "", "Tubes to ignore (comma separat
 var priority *int = flag.Int("pri", 0, "Job priority (smaller runs first) [submit]")
 var delay *int = flag.Int("delay", 0, "Job delay in seconds [submit]")
 var local *bool = flag.Bool("local", false, "Run locally, reporting errors to the configured beanstalk")
+var pause *string = flag.String("pause", "", "Pause tubes (comma separated)")
+var pausedelay *int = flag.Int("pause-delay", 0, "How many seconds to pause tubes for")
 
 func main() {
 	log.SetFlags(0)
@@ -66,6 +68,11 @@ func main() {
 		if e != nil {
 			log.Fatalf("ERROR: %s", e.Error())
 		}
+	} else if *pause != "" {
+		if *pausedelay == 0 {
+			log.Fatal("Usage: glow -pause=<tube1,tube2,...> -pause-delay=<secodnds>")
+		}
+		e = c.pause(*pause, *pausedelay)
 	} else if *stats {
 		e = c.stats()
 		if e != nil {
