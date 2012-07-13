@@ -70,7 +70,7 @@ func main() {
 		}
 	} else if *pause != "" {
 		if *pausedelay == 0 {
-			log.Fatal("Usage: glow -pause=<tube1,tube2,...> -pause-delay=<secodnds>")
+			log.Fatal("Usage: glow -pause=<tube1,tube2,...> -pause-delay=<seconds>")
 		}
 		e = c.pause(*pause, *pausedelay)
 	} else if *stats {
