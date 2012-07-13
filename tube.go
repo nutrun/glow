@@ -10,14 +10,16 @@ type Tube struct {
 	reserved uint
 	ready    uint
 	delayed  uint
+	pause    uint
 }
 
-func NewTube(name string, reserved, ready, delayed uint) *Tube {
+func NewTube(name string, reserved, ready, delayed, pause uint) *Tube {
 	this := new(Tube)
 	this.name = name
 	this.reserved = reserved
 	this.ready = ready
 	this.delayed = delayed
+	this.pause = pause
 	this.deps = make([]string, 0)
 	if deps, found := Config.deps[name]; found {
 		this.deps = deps[:]
@@ -45,5 +47,8 @@ func (this *Tube) MarshalJSON() ([]byte, error) {
 	stats["jobs-ready"] = this.ready
 	stats["jobs-reserved"] = this.reserved
 	stats["jobs-delayed"] = this.delayed
+	if this.pause != 0 {
+		stats["pause"] = this.pause
+	}
 	return json.Marshal(stats)
 }
