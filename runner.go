@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"path/filepath"
 )
 
 type Runner struct {
@@ -37,6 +38,9 @@ func (this *Runner) execute(msg *Message) error {
 	}
 
 	cmd := exec.Command(msg.Executable, msg.Arguments...)
+
+	outputDir := filepath.Dir(msg.Out)
+	os.MkdirAll(outputDir, 0755)
 
 	f, e := os.Create(msg.Out)
 	if e != nil {
