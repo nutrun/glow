@@ -50,19 +50,22 @@ func (this *Message) getCommand() string {
 func (this *Message) readOut() string {
 	if this.Out == "/dev/stdout" || this.Out == "/dev/stderr" {
 		return ""
-	}
+	}	
+	hostname, _ := os.Hostname()
 	content := make([]byte, 0)
+	content = append(content, []byte(fmt.Sprintf("hostname: %v\n", hostname))...)
+
 	info, err := os.Stat(this.Out)
 	if err != nil {
-		content = []byte(fmt.Sprintf("Could not read job log from [%s]. %s", this.Out, err.Error()))
+		content = append(content, []byte(fmt.Sprintf("Could not read job log from [%s]. %s", this.Out, err.Error()))...)
 		return string(content)
 	}
-	if info.Size() > 104857 {
-		content = []byte(fmt.Sprintf("Could not send job log [%s]. File too big", this.Out))
+	if info.Size() > 60000 {
+		content = append(content, []byte(fmt.Sprintf("Could not send job log [%s]. File too big", this.Out))...)
 	} else {
 		content, err = ioutil.ReadFile(this.Out)
 		if err != nil {
-			content = []byte(fmt.Sprintf("Could not read job log from [%s]", this.Out))
+			content = append(content, []byte(fmt.Sprintf("Could not read job log from [%s]", this.Out))...)
 		}
 	}
 	return string(content)
