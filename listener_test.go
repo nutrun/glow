@@ -45,7 +45,7 @@ func TestPutErrorOnBeanstalk(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result := new(GlerrMessage)
+	result := new(ErrMessage)
 	err = json.Unmarshal(failed.Body, result)
 	if err != nil {
 		t.Fatal(err)
