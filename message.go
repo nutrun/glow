@@ -50,7 +50,7 @@ func (this *Message) getCommand() string {
 func (this *Message) readOut() string {
 	if this.Out == "/dev/stdout" || this.Out == "/dev/stderr" {
 		return ""
-	}	
+	}
 	hostname, _ := os.Hostname()
 	content := make([]byte, 0)
 	content = append(content, []byte(fmt.Sprintf("hostname: %v\n", hostname))...)
@@ -69,15 +69,14 @@ func (this *Message) readOut() string {
 		}
 	}
 	return string(content)
-
 }
 
-type GlerrMessage struct {
+type ErrMessage struct {
 	Cmd   string `json:"cmd"`
 	Error string `json:"error"`
 	Log   string `json:"log"`
 }
 
-func NewGlerrMessage(msg *Message, e error) *GlerrMessage {
-	return &GlerrMessage{msg.getCommand(), e.Error(), msg.readOut()}
+func NewErrMessage(msg *Message, e error) *ErrMessage {
+	return &ErrMessage{msg.getCommand(), e.Error(), msg.readOut()}
 }

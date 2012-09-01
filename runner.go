@@ -8,8 +8,8 @@ import (
 	"net/smtp"
 	"os"
 	"os/exec"
-	"strings"
 	"path/filepath"
+	"strings"
 )
 
 type Runner struct {
@@ -82,7 +82,7 @@ func (this *Runner) publishError(msg *Message, e error) {
 		log.Printf("ERROR: %s\n", err)
 		return
 	}
-	payload, err := json.Marshal(NewGlerrMessage(msg, e))
+	payload, err := json.Marshal(NewErrMessage(msg, e))
 	if err != nil {
 		log.Printf("ERROR: %s\n", err)
 		return
