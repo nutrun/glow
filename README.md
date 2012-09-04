@@ -19,7 +19,7 @@ $ glow -listen -v
 Run a job:
 
 ```
-$ glow -v -out=$HOME/glow.out ls
+$ glow -v -tube=test -out=$HOME/glow.out ls
 ```
 
 List what's available:
