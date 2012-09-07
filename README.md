@@ -42,6 +42,11 @@ Run a job:
 $ glow -v -tube=test -out=$HOME/glow.out ls
 ```
 
+Look at output:
+```
+$ cat $HOME/glow.out
+```
+
 List what's available:
 
 ```
@@ -52,17 +57,50 @@ $ glow -h
 A listener connect to a specified beanstalk instsance configured by the enviormental varaible GLOW_QUEUE, reserves a job from beanstalk and executes it.
 
 ### Signals
- 	- Kill listener immediatly
-	- Shut down gracefully (wait for job to finish)
+Kill listener immediatly
+```
+$ killall glow 
+```
+
+Shut down gracefully (wait for job to finish)
+```
+$ killall -2 glow
+```
 
 ### Jobs
-	- Required arguments
-	- Optional arguments
+Required arguments
+```
+cmd: Executable (string)
+args: Arguments (string)
+tube: Tube (string)
+```
+Defaulted
+```
+workdir: Workdir (string) default: /tmp
+out: StdOut/Stderr (string)  default: /dev/null
+```
 
-### Tubes
-	- Dependencies
-	- Priorities
+Optional arguments
+```
+mailto: Mail error on Failure (string)
+pri:  Beanstalk Job Priority   (int)
+delay: Beanstalk Job Delay  (int)
+```
 
+
+### Tubes 
+Dependencies
+```
+
+```
+Priorities
+```
+<pri> is an integer < 2**32. Jobs with smaller priority values will be scheduled before jobs with larger priorities. 
+```
+Exclude
+```
+-exclude=<Tube,Tube> a listener will not reserve jobs from any of the specified tubes
+```
 ### Supermegamicrooptimization
 
 For improved queueing performance, a json list of jobs can be piped to glow's stdin: 
