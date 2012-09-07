@@ -59,7 +59,9 @@ listenerloop:
 		}
 		e = this.execute(msg)
 		if e == nil {
-			log.Printf("COMPLETE: %s", job.Body)
+			if this.verbose {
+				log.Printf("COMPLETE: %s", job.Body)
+			}
 		} else {
 			log.Printf("FAILED: %s", job.Body)
 		}
