@@ -1,6 +1,26 @@
+UNDER CONSTRUCTION, THE DOCS MAY NOT BE COMPLETE
+
 # glow
 
-Distributed job scheduling via [beankstalkd](http://kr.github.com/beanstalkd/)
+Distributed job scheduling via [beankstalkd](http://kr.github.com/beanstalkd/), allows heterogenuis systems to execute a set of tasks includes:
+-notification on faiure
+-job dependencies
+-resource isolation
+
+### Setup 
+### BUILDING
+
+Needs golang go1 or recent weekly and [lentil](https://github.com/nutrun/lentil )
+
+```
+$ go get github.com/nutrun/lentil
+```
+
+Inside a $GOPATH/src
+
+```
+$ git clone git@git:grid/glow.git && cd glow && go install
+```
 
 ### RUNNING
 
@@ -13,7 +33,7 @@ $ beanstalkd
 Start a listener:
 
 ```
-$ glow -listen -v
+$ GLOW_QUEUE=localhost:11300 glow -listen -v
 ```
 
 Run a job:
@@ -28,19 +48,20 @@ List what's available:
 $ glow -h
 ```
 
-### BUILDING
+### Listener
+A listener connect to a specified beanstalk instsance configured by the enviormental varaible GLOW_QUEUE, reserves a job from beanstalk and executes it.
 
-Needs golang go1 or recent weekly and [lentil](https://github.com/nutrun/lentil )
+### Signals
+ 	- Kill listener immediatly
+	- Shut down gracefully (wait for job to finish)
 
-```
-$ go get github.com/nutrun/lentil
-```
+### Jobs
+	- Required arguments
+	- Optional arguments
 
-Inside a $GOPATH/src
-
-```
-$ git clone git@git:grid/glow.git && cd glow && go install
-```
+### Tubes
+	- Dependencies
+	- Priorities
 
 ### Supermegamicrooptimization
 
