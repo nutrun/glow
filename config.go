@@ -35,7 +35,7 @@ func NewConfig() *Configuration {
 }
 
 func (this *Configuration) Load() error {
-	path := os.Getenv("GLOW_CONFIG")
+	path := os.Getenv("GLOW_DEPS")
 	this.deps = make(map[string][]string)
 	deps, err := ioutil.ReadFile(path)
 	if err != nil {

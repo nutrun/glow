@@ -45,6 +45,7 @@ glow uses these environment variables:
 - `GLOW_QUEUE`: beanstalkd queue to connect to, defaults to `0.0.0.0:11300`
 - `GLOW_SMTP_SERVER`: server to use for sending emails [listener only]
 - `GLOW_MAIL_FROM`: emails sent by glow will have this as the `from` field, defaults to `glow@example.com` [listener only]
+- `GLOW_DEPS`: path to file containing list of tube dependency configuration (see below for details)
 
 ## Listener
 A listener connects to the beanstalk queue the environment variable GLOW_QUEUE points to, listens for jobs and executes them.
@@ -54,29 +55,35 @@ $ GLOW_QUEUE=10.0.0.4:11300 glow -listen
 
 ### Signals
 Kill listener immediatly
+
 ```
 $ killall glow 
 ```
 
 Shut down gracefully (wait for job to finish)
+
 ```
 $ killall -2 glow
 ```
 
 ### Jobs
 Required arguments
+
 ```
 cmd: Executable (string)
 args: Arguments (string)
 tube: Tube (string)
 ```
+
 Defaulted
+
 ```
 workdir: Workdir (string) default: /tmp
 out: StdOut/Stderr (string)  default: /dev/null
 ```
 
 Optional arguments
+
 ```
 mailto: Mail error on Failure (string)
 pri:  Beanstalk Job Priority   (int)
@@ -85,15 +92,33 @@ delay: Beanstalk Job Delay  (int)
 
 
 ### Tubes 
-Dependencies
-```
+A beanstalk tube is a priority based fifo queue of jobs:
+https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt#L105
+
+Dependency configuration
 
 ```
+{
+    "foo": [
+        "bar"
+    ],
+    "baz": [
+    	"foo",
+    	"bar"
+    ]
+}
+```
+
+- Tube foo depends on tube bar: if there are any ready/delayed/working jobs in bar, no jobs from foo will run
+- Tube bar does not have any dependencies, jobs from bar will run whenever there are free workers available in the priority or queueed order
+- Tube baz depends on tube bar and foo, it will block until bar and foo are done
+
 Priorities
 ```
 <pri> is an integer < 2**32. Jobs with smaller priority values will be scheduled before jobs with larger priorities. 
 ```
 Exclude
+
 ```
 -exclude=<Tube,Tube> a listener will not reserve jobs from any of the specified tubes
 ```
