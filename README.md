@@ -2,27 +2,20 @@ UNDER CONSTRUCTION, THE DOCS MAY NOT BE COMPLETE
 
 # glow
 
-Distributed job scheduling via [beankstalkd](http://kr.github.com/beanstalkd/), allows heterogenuis systems to execute a set of tasks includes:
--notification on faiure
--job dependencies
--resource isolation
+Distributed processing manager
 
-### Setup 
-### BUILDING
+## Setup 
 
-Needs golang go1 or recent weekly and [lentil](https://github.com/nutrun/lentil )
+- Install [beanstalkd](http://kr.github.com/beanstalkd/download.html)
+- Download a glow binary and add it to `$PATH`
 
-```
-$ go get github.com/nutrun/lentil
-```
+### Building from source
 
-Inside a $GOPATH/src
+- Install [Go](http://golang.org/doc/install)
+- Install the [lentil](https://github.com/nutrun/lentil) beanstalkd client library
+- `go get github.com/nutrun/lentil` or `cd <path-to-glow-source> && go install` 
 
-```
-$ git clone git@git:grid/glow.git && cd glow && go install
-```
-
-### RUNNING
+## Quickstart
 
 Start beanstalkd:
 
@@ -30,31 +23,34 @@ Start beanstalkd:
 $ beanstalkd
 ```
 
-Start a listener:
+Start a glow listener:
 
 ```
-$ GLOW_QUEUE=localhost:11300 glow -listen -v
+$ glow -listen
 ```
 
 Run a job:
 
 ```
-$ glow -v -tube=test -out=$HOME/glow.out ls
+$ glow -tube=test -out=/dev/stdout ls
 ```
 
-Look at output:
-```
-$ cat $HOME/glow.out
-```
+The job's output should appear on the terminal running the glow listener. Invoke `glow -h` to list all available options.
 
-List what's available:
+
+## Configuration
+
+glow uses these environment variables:
+
+- `GLOW_QUEUE`: beanstalkd queue to connect to, defaults to `0.0.0.0:11300`
+- `GLOW_SMTP_SERVER`: server to use for sending emails [listener only]
+- `GLOW_MAIL_FROM`: emails sent by glow will have this as the `from` field, defaults to `glow@example.com` [listener only]
+
+## Listener
+A listener connects to the beanstalk queue the environment variable GLOW_QUEUE points to, listens for jobs and executes them.
 
 ```
-$ glow -h
-```
-
-### Listener
-A listener connect to a specified beanstalk instsance configured by the enviormental varaible GLOW_QUEUE, reserves a job from beanstalk and executes it.
+$ GLOW_QUEUE=10.0.0.4:11300 glow -listen
 
 ### Signals
 Kill listener immediatly
