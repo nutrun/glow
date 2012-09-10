@@ -53,6 +53,9 @@ func (this *Runner) execute(msg *Message) error {
 	cmd.Stderr = f
 	cmd.Stdout = f
 
+	log.Printf("INFO: Running command '%s %s'\n", msg.Executable, strings.Join(msg.Arguments, " "))
+	log.Printf("INFO: Output to %s\n", msg.Out)
+
 	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)
