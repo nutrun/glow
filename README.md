@@ -47,32 +47,23 @@ glow uses these environment variables:
 - `GLOW_MAIL_FROM`: emails sent by glow will have this as the `from` field, defaults to `glow@example.com` [listener only]
 - `GLOW_DEPS`: path to tube dependency configuration file (see below for details)
 
-## Listener
+## Listen
 A listener connects to the beanstalk queue the environment variable GLOW_QUEUE points to, listens for jobs and executes them.
 
 ```
 $ GLOW_QUEUE=10.0.0.4:11300 glow -listen
 ```
 
-### Signals
-Kill listener immediatly
+Exclude
 
 ```
-$ killall glow 
+-exclude=<Tube,Tube> a listener will not reserve jobs from any of the specified tubes
 ```
 
-Shut down gracefully (wait for job to finish)
-
-```
-$ killall -2 glow
-```
-
-### Jobs
+### Submit
 Required arguments
 
 ```
--cmd= Executable (string)
--args= Arguments (string)
 -tube= Tube (string)
 ```
 
@@ -119,13 +110,20 @@ Priorities
 -pri= is an integer < 2**32. Jobs with smaller priority values will be scheduled before jobs with larger priorities. 
 ```
 
-Exclude
+### Signals
+Kill listener immediatly
 
 ```
--exclude=<Tube,Tube> a listener will not reserve jobs from any of the specified tubes
+$ killall glow 
 ```
+
+Shut down gracefully (wait for job to finish)
+
+```
+$ killall -2 glow
+```
+
 ### Supermegamicrooptimization
-
 For improved queueing performance, a json list of jobs can be piped to glow's stdin: 
 
 ```
