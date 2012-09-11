@@ -110,6 +110,26 @@ class TestGlowIntegration(unittest.TestCase):
         returncode = subprocess.call([glow_executable(), '-local', '/nonexistent/executable'], stderr=open('/dev/null', 'w'))
         self.assertNotEqual(0, returncode)
         self.assertEqual(1, tubes()['GLOW_ERRORS']['jobs-ready'])
+
+    def test_create_output_file_if_not_exists(self):
+        tmpfilename = temporary_file_name()
+        self.assertFalse(os.path.exists(tmpfilename))
+        self.listener.start()
+        subprocess.check_call([glow_executable(), '-tube', 'job', '-out', tmpfilename, '/bin/echo', 'job'])
+        self.listener.wait_for_job_completion({'tube': 'job', 'out': tmpfilename})
+        with open(tmpfilename, 'r') as outfile:
+            self.assertEqual('job\n', outfile.read())
+        self.listener.interrupt()
+
+    def test_append_to_output_file_if_exists(self):
+        tmpfilename = temporary_file_name()
+        self.listener.start()
+        subprocess.check_call([glow_executable(), '-tube', 'job1', '-out', tmpfilename, '/bin/echo', 'job1'])
+        subprocess.check_call([glow_executable(), '-tube', 'job2', '-out', tmpfilename, '/bin/echo', 'job2'])
+        self.listener.wait_for_job_completion({'tube': 'job2', 'out': tmpfilename})
+        with open(tmpfilename, 'r') as outfile:
+            self.assertEqual('job1\njob2\n', outfile.read())
+        self.listener.interrupt()
     
 
 debug = False

@@ -42,7 +42,7 @@ func (this *Runner) execute(msg *Message) error {
 	outputDir := filepath.Dir(msg.Out)
 	os.MkdirAll(outputDir, 0755)
 
-	f, e := os.Create(msg.Out)
+	f, e := os.OpenFile(msg.Out, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if e != nil {
 		this.catch(msg, e)
 		return e
@@ -52,6 +52,9 @@ func (this *Runner) execute(msg *Message) error {
 
 	cmd.Stderr = f
 	cmd.Stdout = f
+
+	log.Printf("INFO: Running command '%s %s'\n", msg.Executable, strings.Join(msg.Arguments, " "))
+	log.Printf("INFO: Output to %s\n", msg.Out)
 
 	e = cmd.Start()
 	if e != nil {
