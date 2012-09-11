@@ -27,7 +27,7 @@ func TestRunnerOutput(t *testing.T) {
 }
 
 func TestRunnerShouldPutErrorOnBeanstalk(t *testing.T) {
-	runner, err := NewRunner()
+	runner, err := NewRunner(false)
 	if err != nil {
 		t.Fatal(err)
 	}

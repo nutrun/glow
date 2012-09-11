@@ -111,21 +111,21 @@ Priorities
 ```
 
 ### Signals
-Kill listener immediatly
+SIGTERM kills a listener and its running job immediatly
 
 ```
 $ killall glow 
 ```
 
-Shut down gracefully (wait for job to finish)
+Shut down gracefully (wait for job to finish) with SIGINT
 
 ```
 $ killall -2 glow
 ```
 
-### Supermegamicrooptimization
-For improved queueing performance, a json list of jobs can be piped to glow's stdin: 
+### Batch job queueing
+For improved performance when queueng up a lot of jobs at once, a json list of jobs can be piped to glow's stdin: 
 
 ```
-echo '[{"cmd":"ls","pri":"0","tube":"foo","delay":"0","mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"},{"cmd":"ps","pri":"1","tube":"bar","delay":"0","mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"}]' | glow
+echo '[{"cmd":"ls","arguments":["-l", "-a"],"pri":0,"tube":"foo","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"},{"cmd":"ps","pri":1,"tube":"bar","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"}]' | glow
 ```

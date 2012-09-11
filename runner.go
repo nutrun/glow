@@ -13,11 +13,12 @@ import (
 )
 
 type Runner struct {
-	q    *lentil.Beanstalkd
-	proc *os.Process
+	q       *lentil.Beanstalkd
+	proc    *os.Process
+	verbose bool
 }
 
-func NewRunner() (*Runner, error) {
+func NewRunner(verbose bool) (*Runner, error) {
 	this := new(Runner)
 	q, err := lentil.Dial(Config.QueueAddr)
 
@@ -26,6 +27,7 @@ func NewRunner() (*Runner, error) {
 	}
 
 	this.q = q
+	this.verbose = verbose
 	return this, nil
 }
 
@@ -52,10 +54,10 @@ func (this *Runner) execute(msg *Message) error {
 
 	cmd.Stderr = f
 	cmd.Stdout = f
-
-	log.Printf("INFO: Running command '%s %s'\n", msg.Executable, strings.Join(msg.Arguments, " "))
-	log.Printf("INFO: Output to %s\n", msg.Out)
-
+	if this.verbose {
+		log.Printf("INFO: Running command '%s %s'\n", msg.Executable, strings.Join(msg.Arguments, " "))
+		log.Printf("INFO: Output to %s\n", msg.Out)
+	}
 	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)

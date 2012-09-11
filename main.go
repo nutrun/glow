@@ -47,7 +47,7 @@ func main() {
 	if *local {
 		executable, arguments := parse_command()
 		msg := &Message{executable, arguments, *mailto, *workdir, *out, "", 0, 0}
-		runner, e := NewRunner()
+		runner, e := NewRunner(*verbose)
 		if e != nil {
 			log.Fatal(e)
 		}
