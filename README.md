@@ -39,7 +39,7 @@ The job's output should appear on the terminal running the glow listener. Invoke
 
 ## Listen
 
-A listener connects to the beanstalk queue pointed to by the environment variable `GLOW_QUEUE`, waits for jobs and executes them as they become available. In order to achieve parallelism, a glow system will have many hosts and a number of listeners on each host. The number of listeners per host should depend on the type of job and number of available cores.
+A listener connects to the beanstalk queue specified by the environment variable `GLOW_QUEUE` (it defaults to `0.0.0.0:11300` if GLOW_QUEUE isn't specified), waits for jobs and executes them as they become available. In order to achieve parallelism, a glow system will have many hosts and a number of listeners on each host. The number of listeners per host should depend on the type of job and number of available cores.
 
 Listen options:
 
