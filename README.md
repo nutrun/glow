@@ -182,7 +182,7 @@ Failure emails will also be sent to the list of recipients specified by the `-ma
 ## Utilities
 
 ```
-glow -h 2>&1 | grep -v 'submit\|listen'
+$ glow -h 2>&1 | grep -v 'submit\|listen'
 ```
 
 ### Drain tubes
