@@ -108,7 +108,7 @@ $ killall glow
 Shut down gracefully (wait for job to finish) with `SIGINT`:
 
 ```
-$ killall -2 glow
+$ killall -SIGINT glow
 ```
 
 
