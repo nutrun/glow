@@ -10,7 +10,7 @@ import (
 
 var listener *bool = flag.Bool("listen", false, "Start listener")
 var help *bool = flag.Bool("help", false, "Show help")
-var mailto *string = flag.String("mailto", "", "Who to email on failure (comma separated) [sumbit]")
+var mailto *string = flag.String("mailto", "", "Who to email on failure (comma separated) [submit]")
 var workdir *string = flag.String("workdir", "/tmp", "Directory to run job from [submit]")
 var out *string = flag.String("out", "/dev/null", "File to send job's stdout and stderr [submit]")
 var tube *string = flag.String("tube", "", "Beanstalkd tube to send the job to [submit]")
@@ -23,6 +23,9 @@ var delay *int = flag.Int("delay", 0, "Job delay in seconds [submit]")
 var local *bool = flag.Bool("local", false, "Run locally, reporting errors to the configured beanstalk")
 var pause *string = flag.String("pause", "", "Pause tubes (comma separated)")
 var pausedelay *int = flag.Int("pause-delay", 0, "How many seconds to pause tubes for")
+var mailfrom *string = flag.String("mail-from", "glow@example.com", "Email 'from' field [listen]")
+var smtpserver *string = flag.String("smtp-server", "", "Server to use for sending emails [listen]")
+var deps *string = flag.String("deps", "", "Path to tube dependency config file [listen]")
 
 func main() {
 	log.SetFlags(0)

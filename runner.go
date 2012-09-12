@@ -99,7 +99,7 @@ func (this *Runner) publishError(msg *Message, e error) {
 }
 
 func (this *Runner) mail(msg *Message, e error) {
-	if Config.SmtpServerAddr == "" {
+	if Config.SmtpServer == "" {
 		return
 	}
 	if len(msg.Mailto) < 1 { //no email addresses
@@ -109,7 +109,7 @@ func (this *Runner) mail(msg *Message, e error) {
 	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg.getCommand())
 	hostname, _ := os.Hostname()
 	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s\n%s", hostname, subject, e, msg.readOut()))
-	e = smtp.SendMail(Config.SmtpServerAddr, nil, Config.MailFrom, to, []byte(mail))
+	e = smtp.SendMail(Config.SmtpServer, nil, Config.MailFrom, to, []byte(mail))
 	if e != nil {
 		log.Printf("ERROR: %s\n", e)
 	}
