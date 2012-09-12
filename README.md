@@ -13,7 +13,7 @@ Distributed processing manager
 
 - Install [Go](http://golang.org/doc/install)
 - Install the [lentil](https://github.com/nutrun/lentil) beanstalkd client library
-- `go get github.com/nutrun/lentil` or `cd <path-to-glow-source> && go install` 
+- `go get github.com/nutrun/glow` or `cd <path-to-glow-source> && go install` 
 
 ## Quickstart
 
