@@ -44,7 +44,7 @@ A listener connects to the beanstalk queue specified by the environment variable
 Listen options:
 
 ```
-$ glow -h 2>&1 >/dev/null | grep listen
+$ glow -h 2>&1 | grep listen
 ```
 
 Start a listener:
@@ -117,7 +117,7 @@ $ killall -2 glow
 Submit options:
 
 ```
-$ glow -h 2>&1 >/dev/null | grep submit
+$ glow -h 2>&1 | grep submit
 ```
 
 Send a job to a tube on the beanstalkd queue to be executed by a listener (`-tube` is required):
@@ -182,7 +182,7 @@ Failure emails will also be sent to the list of recipients specified by the `-ma
 ## Utilities
 
 ```
-glow -h 2>&1 >/dev/null | grep -v 'submit\|listen'
+glow -h 2>&1 | grep -v 'submit\|listen'
 ```
 
 ### Drain tubes
