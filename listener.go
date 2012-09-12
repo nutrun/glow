@@ -40,7 +40,10 @@ listenerloop:
 		if this.sig != nil {
 			os.Exit(0)
 		}
-		Config.Load()
+		e := Config.Load()
+		if e != nil {
+			log.Fatalf("Error loading config: %s\n", e)
+		}
 		job, e := this.jobqueue.Next()
 		if e != nil {
 			if strings.Contains(e.Error(), "TIMED_OUT") {

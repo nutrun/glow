@@ -65,12 +65,12 @@ $ glow -listen -v
 A [beanstalk tube](https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt#L105) is a priority based fifo queue of jobs. In glow, a tube can depend on one or more other tubes. Tube dependencies are specified in a JSON file:
 
 ```
-$ cat glow-deps.json
+$ cat > glow-deps.json
 {
  "foo": ["bar"],
  "baz": ["foo", "bar"]
 }
-
+  
 $ glow -listen -deps=glow-deps.json
 ```
 
