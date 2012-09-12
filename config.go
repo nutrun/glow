@@ -35,13 +35,15 @@ func NewConfig() *Configuration {
 }
 
 func (this *Configuration) Load() error {
-	path := *deps
+	if *deps == "" {
+		return nil
+	}
 	this.deps = make(map[string][]string)
-	deps, err := ioutil.ReadFile(path)
+	dependencies, err := ioutil.ReadFile(*deps)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(deps, &this.deps)
+	return json.Unmarshal(dependencies, &this.deps)
 }
 
 var Config = NewConfig()
