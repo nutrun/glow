@@ -2,7 +2,7 @@ UNDER CONSTRUCTION
 
 # glow
 
-Distributed processing manager
+Distributed parallelization of tasks
 
 ## Setup 
 
