@@ -7,7 +7,7 @@ Distributed parallelization of tasks
 ## Setup 
 
 - Install [beanstalkd](http://kr.github.com/beanstalkd/download.html)
-- Download a glow binary and add it to `$PATH`
+- [Download a glow binary](https://github.com/nutrun/glow/downloads) and add it to `$PATH`
 
 ### Building from source
 
