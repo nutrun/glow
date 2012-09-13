@@ -1,5 +1,3 @@
-UNDER CONSTRUCTION
-
 # glow
 
 Distributed parallelization of tasks
