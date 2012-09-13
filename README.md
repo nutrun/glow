@@ -75,7 +75,7 @@ $ glow -listen -deps=glow-deps.json
 ```
 
 - Tube `foo` depends on tube bar: no jobs from `foo` will run while there are ready/delayed/reserved jobs in `bar`
-- Tube `bar` does not have any dependencies. Jobs from `bar` will run whenever there are free workers available
+- Tube `bar` does not have any dependencies. Jobs from `bar` will run whenever there are free listeners available
 - Tube `baz` depends on tube `bar` and `foo`. It will block until `bar` and `foo` are done
 - Dependencies are not transitive. If `foo` depends on `bar` and `baz` depends on `foo`, `baz` doesn't depend on `bar`
 
@@ -89,10 +89,10 @@ $ glow -listen -exclude=foo,bar
 
 ### Email
 
-The smtp server and email `FROM` field can be configured for glow's job failure email notifications:
+The SMTP server and email `FROM` field can be configured for glow's job failure email notifications:
 
 ```
-$ glow -listen -smtp-server=smtp.example.com -mail-from=glow@example.com
+$ glow -listen -SMTP-server=SMTP.example.com -mail-from=glow@example.com
 ```
 
 Emails will only be sent when a list of recipients has been specified at job submission.
@@ -167,7 +167,7 @@ $ glow -tube=mytube -workdir=/home/bob/scripts mycommand arg1 arg2
 ```
 
 ### Batch job submit
-For improved performance when queueng up a lot of jobs at once, a json list of jobs can be piped to glow's stdin: 
+For improved performance when queueng up a lot of jobs at once, a JSON list of jobs can be piped to glow's stdin: 
 
 ```
 echo '[{"cmd":"ls","arguments":["-l", "-a"],"pri":0,"tube":"foo","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"},{"cmd":"ps","pri":1,"tube":"bar","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"}]' | glow
@@ -187,13 +187,13 @@ $ glow -h 2>&1 | grep -v 'submit\|listen'
 
 ### Drain tubes
 
-Delete all jobs from a list tube, subsequently killing them:
+Delete all jobs from a list of tubes, subsequently killing the tubes:
 
 ```
 $ glow -drain=tube1,tube2
 ```
 
-The output of `drain` is json that can be used to requeue the jobs by piping to `glow`.
+The output of `drain` is JSON that can be used to requeue the jobs by piping to `glow`.
 
 ### Pause tubes
 
