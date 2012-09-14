@@ -45,5 +45,3 @@ func (this *Configuration) Load() error {
 	}
 	return json.Unmarshal(dependencies, &this.deps)
 }
-
-var Config = NewConfig()

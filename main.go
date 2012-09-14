@@ -27,9 +27,12 @@ var mailfrom *string = flag.String("mail-from", "glow@example.com", "Email 'from
 var smtpserver *string = flag.String("smtp-server", "", "Server to use for sending emails [listen]")
 var deps *string = flag.String("deps", "", "Path to tube dependency config file [listen]")
 
+var Config *Configuration
+
 func main() {
 	log.SetFlags(0)
 	flag.Parse()
+	Config = NewConfig()
 	if *listener {
 		include := false
 		filter := make([]string, 0)
