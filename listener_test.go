@@ -10,14 +10,17 @@ import (
 	"testing"
 )
 
-func createTestMessage(cmd, out, workdir string) *Message {
+func createTestMessage(cmd, out, workdir string) (*Message, error) {
 	tokens := strings.Split(cmd, " ")
-	return &Message{tokens[0], tokens[1:len(tokens)], "", workdir, out, "", 0, 0}
+	return NewMessage(tokens[0], tokens[1:len(tokens)], "", workdir, out, "testtube", 0, 0)
 }
 
 func TestOutput(t *testing.T) {
 	listener := new(Listener)
-	msg := createTestMessage("echo you suck", "test.out", ".")
+	msg, e := createTestMessage("echo you suck", "test.out", ".")
+	if e != nil {
+		t.Fatal(e)
+	}
 	listener.execute(msg)
 	out, e := ioutil.ReadFile("test.out")
 	if e != nil {
@@ -38,7 +41,10 @@ func TestPutErrorOnBeanstalk(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.SetOutput(bytes.NewBufferString(""))
-	msg := createTestMessage("lsdonmybrain", "test.out", ".")
+	msg, e := createTestMessage("lsdonmybrain", "test.out", ".")
+	if e != nil {
+		t.Fatal(e)
+	}
 	listener.execute(msg)
 	listener.q.Watch(Config.errorQueue)
 	failed, err := listener.q.ReserveWithTimeout(0)

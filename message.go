@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -20,23 +21,38 @@ type Message struct {
 	Delay      int      `json:"delay"`
 }
 
-func (this *Message) sanitize() error {
-	if this.Out == "" {
-		this.Out = "/dev/null"
+func NewMessage(executable string, args []string, mailto, workdir, out, tube string, pri, delay int) (*Message, error) {
+	if tube == "" {
+		return nil, errors.New("Missing required param -tube")
 	}
-	if this.Workdir == "" {
-		this.Workdir = "/tmp"
+	if workdir == "" {
+		workdir = "/tmp"
 	}
-	absoluteWorkdir, e := filepath.Abs(this.Workdir)
-	this.Workdir = absoluteWorkdir
-	return e
+	absoluteWorkdir, e := filepath.Abs(workdir)
+	if e != nil {
+		return nil, e
+	}
+	if out == "" {
+		out = "/dev/null"
+	}
+	return &Message{executable, args, mailto, absoluteWorkdir, out, tube, pri, delay}, nil
 }
 
-func (this *Message) isValid() error {
-	if this.Tube == "" {
-		return errors.New("Missing required param -tube")
+func MessagesFromJSON(jsonstr []byte) ([]*Message, error) {
+	vals := make([]*Message, 0)
+	e := json.Unmarshal(jsonstr, &vals)
+	if e != nil {
+		return nil, e
 	}
-	return nil
+	messages := make([]*Message, len(vals))
+	for i, m := range vals {
+		msg, e := NewMessage(m.Executable, m.Arguments, m.Mailto, m.Workdir, m.Out, m.Tube, m.Priority, m.Delay)
+		if e != nil {
+			return nil, e
+		}
+		messages[i] = msg
+	}
+	return messages, nil
 }
 
 func (this *Message) getCommand() string {

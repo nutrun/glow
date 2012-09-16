@@ -76,7 +76,7 @@ func (this *Runner) execute(msg *Message) error {
 
 // Log and email errors
 func (this *Runner) catch(msg *Message, e error) {
-	log.Printf("ERROR: %s\n", e.Error())
+	log.Printf("ERROR: %s\n", e)
 	this.mail(msg, e)
 	this.publishError(msg, e)
 }

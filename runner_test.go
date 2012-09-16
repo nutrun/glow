@@ -11,7 +11,10 @@ import (
 
 func TestRunnerOutput(t *testing.T) {
 	runner := new(Runner)
-	msg := createTestMessage("echo you suck", "test.out", ".")
+	msg, e := createTestMessage("echo you suck", "test.out", ".")
+	if e != nil {
+		t.Fatal(e)
+	}
 	runner.execute(msg)
 	out, e := ioutil.ReadFile("test.out")
 	if e != nil {
@@ -32,7 +35,10 @@ func TestRunnerShouldPutErrorOnBeanstalk(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.SetOutput(bytes.NewBufferString(""))
-	msg := createTestMessage("lsdonmybrain", "test.out", ".")
+	msg, e := createTestMessage("lsdonmybrain", "test.out", ".")
+	if e != nil {
+		t.Fatal(e)
+	}
 	runner.execute(msg)
 	runner.q.Watch(Config.errorQueue)
 	failed, err := runner.q.ReserveWithTimeout(0)

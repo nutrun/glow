@@ -26,13 +26,6 @@ func NewClient(verbose bool) (*Client, error) {
 }
 
 func (this *Client) put(msg *Message) error {
-	if e := msg.sanitize(); e != nil {
-		return e
-	}
-	if e := msg.isValid(); e != nil {
-		return e
-	}
-
 	message, e := json.Marshal(msg)
 	if this.verbose {
 		log.Printf("QUEUEING UP: %s\n", message)
@@ -51,8 +44,7 @@ func (this *Client) put(msg *Message) error {
 }
 
 func (this *Client) putMany(input []byte) error {
-	jobs := make([]*Message, 0)
-	e := json.Unmarshal(input, &jobs)
+	jobs, e := MessagesFromJSON(input)
 	if e != nil {
 		return e
 	}

@@ -41,7 +41,7 @@ func main() {
 		}
 		l, e := NewListener(*verbose, include, filter)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
+			log.Fatalf("ERROR: %s", e)
 		}
 		l.run()
 		return
@@ -51,28 +51,32 @@ func main() {
 	}
 
 	if *local {
-		executable, arguments := parse_command()
-		msg := &Message{executable, arguments, *mailto, *workdir, *out, "", 0, 0}
+		executable, arguments := parseCommand()
+		// hack: local doesn't need tube, defaulting it to respect the Message API
+		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *out, "localignore", 0, 0)
+		if e != nil {
+			log.Fatal(e)
+		}
 		runner, e := NewRunner(*verbose)
 		if e != nil {
 			log.Fatal(e)
 		}
 		e = runner.execute(msg)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
+			log.Fatalf("ERROR: %s", e)
 		}
 		return
 	}
 
 	c, e := NewClient(*verbose)
 	if e != nil {
-		log.Fatalf("ERROR: %s", e.Error())
+		log.Fatalf("ERROR: %s", e)
 	}
 
 	if *drain != "" {
 		e = c.drain(*drain)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
+			log.Fatalf("ERROR: %s", e)
 		}
 	} else if *pause != "" {
 		if *pausedelay == 0 {
@@ -82,7 +86,7 @@ func main() {
 	} else if *stats {
 		e = c.stats()
 		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
+			log.Fatalf("ERROR: %s", e)
 		}
 	} else if len(flag.Args()) == 0 { // Queue up many jobs from STDIN
 		in := bufio.NewReaderSize(os.Stdin, 1024*1024)
@@ -93,23 +97,27 @@ func main() {
 				if e.Error() == "EOF" {
 					break
 				}
-				log.Fatalf("ERROR: %s", e.Error())
+				log.Fatalf("ERROR: %s", e)
 			}
 			input = append(input, line...)
 		}
 		e = c.putMany(input)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
+			log.Fatalf("ERROR: %s", e)
 		}
 	} else { // Queue up one job
-		executable, arguments := parse_command()
-		e = c.put(&Message{executable, arguments, *mailto, *workdir, *out, *tube, *priority, *delay})
+		executable, arguments := parseCommand()
+		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *out, *tube, *priority, *delay)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e.Error())
+			log.Fatalf("ERROR: %s", e)
+		}
+		e = c.put(msg)
+		if e != nil {
+			log.Fatalf("ERROR: %s", e)
 		}
 	}
 }
 
-func parse_command() (string, []string) {
+func parseCommand() (string, []string) {
 	return flag.Args()[0], flag.Args()[1:len(flag.Args())]
 }
