@@ -8,7 +8,7 @@ import (
 )
 
 func resetConfig() {
-	Config = NewConfig()
+	Config = NewConfig("", "", "")
 	Config.deps = make(map[string][]string)
 }
 

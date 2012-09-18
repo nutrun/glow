@@ -15,18 +15,20 @@ type Configuration struct {
 	QueueAddr  string
 	SmtpServer string
 	MailFrom   string
+	depsPath   string
 	deps       map[string][]string
 	errorQueue string
 }
 
-func NewConfig() *Configuration {
+func NewConfig(deps, smtpserver, mailfrom string) *Configuration {
 	config := new(Configuration)
 	config.QueueAddr = os.Getenv("GLOW_QUEUE")
 	if config.QueueAddr == "" {
 		config.QueueAddr = DEFAULT_QUEUE_ADDR
 	}
-	config.SmtpServer = *smtpserver
-	config.MailFrom = *mailfrom
+	config.SmtpServer = smtpserver
+	config.MailFrom = mailfrom
+	config.depsPath = deps
 	if config.MailFrom == "" {
 		config.MailFrom = DEFAULT_FROM_EMAIL
 	}
@@ -39,7 +41,7 @@ func (this *Configuration) Load() error {
 		return nil
 	}
 	this.deps = make(map[string][]string)
-	dependencies, err := ioutil.ReadFile(*deps)
+	dependencies, err := ioutil.ReadFile(this.depsPath)
 	if err != nil {
 		return err
 	}

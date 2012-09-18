@@ -32,7 +32,7 @@ var Config *Configuration
 func main() {
 	log.SetFlags(0)
 	flag.Parse()
-	Config = NewConfig()
+	Config = NewConfig(*deps, *smtpserver, *mailfrom)
 	if *listener {
 		include := false
 		filter := make([]string, 0)
