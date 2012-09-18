@@ -36,7 +36,7 @@ func NewConfig(deps, smtpserver, mailfrom string) *Configuration {
 	return config
 }
 
-func (this *Configuration) Load() error {
+func (this *Configuration) LoadDeps() error {
 	if *deps == "" {
 		return nil
 	}

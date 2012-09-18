@@ -40,9 +40,9 @@ listenerloop:
 		if this.sig != nil {
 			os.Exit(0)
 		}
-		e := Config.Load()
+		e := Config.LoadDeps()
 		if e != nil {
-			log.Fatalf("Error loading config: %s\n", e)
+			log.Fatalf("Error loading dependency config: %s\n", e)
 		}
 		job, e := this.jobqueue.Next()
 		if e != nil {
