@@ -121,7 +121,7 @@ $ glow -h 2>&1 | grep submit
 Send a job to a tube on the beanstalkd queue to be executed by a listener (`-tube` is required):
 
 ```
-$ glow -tube=mytube mycommand arg1 arg2 # [...argn]
+$ glow -tube=mytube mycmd arg1 arg2 # [...argn]
 ```
 
 ### Job delay
@@ -129,13 +129,13 @@ $ glow -tube=mytube mycommand arg1 arg2 # [...argn]
 [Delay](https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt#L136) is an integer number of seconds to wait before making the job avaible to run:
 
 ```
-$ glow -tube=mytube -delay=60 mycommand arg1 arg2
+$ glow -tube=mytube -delay=60 mycmd arg1 arg2
 ```
 
 ### Failure emails
 
 ```
-$ glow -tube=mytube -mailto=bob@example.com,alice@example.com mycommand arg1 arg2
+$ glow -tube=mytube -mailto=bob@example.com,alice@example.com mycmd arg1 arg2
 ```
 
 ### Job output
@@ -143,7 +143,7 @@ $ glow -tube=mytube -mailto=bob@example.com,alice@example.com mycommand arg1 arg
 Job `stdout` and `stderr` can be redirected to a file:
 
 ```
-$ glow -tube=mytube -out=/tmp/mycommand.log mycommand arg1 arg2
+$ glow -tube=mytube -stdout=/tmp/mycmd.out -stderr=/tmp/mycmd.err  mycmd arg1 arg2
 ```
 
 By default, a job's `stdout` and `stderr` are sent to `/dev/null`
@@ -153,7 +153,7 @@ By default, a job's `stdout` and `stderr` are sent to `/dev/null`
 [Priority](https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt#L132) is an integer < 2**32. Jobs with smaller priority values will be scheduled before jobs with larger priorities:
 
 ```
-$ glow -tube=mytube -pri=177 mycommand arg1 arg2
+$ glow -tube=mytube -pri=177 mycmd arg1 arg2
 ```
 
 ### Job working directory
@@ -161,7 +161,7 @@ $ glow -tube=mytube -pri=177 mycommand arg1 arg2
 Where to run the job from. Defaults to `/tmp`. The listener will `chdir` to `workdir` before executing the job's command:
 
 ```
-$ glow -tube=mytube -workdir=/home/bob/scripts mycommand arg1 arg2
+$ glow -tube=mytube -workdir=/home/bob/scripts mycmd arg1 arg2
 ```
 
 ### Batch job submit
