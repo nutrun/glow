@@ -168,14 +168,22 @@ $ glow -tube=mytube -workdir=/home/bob/scripts mycmd arg1 arg2
 For improved performance when queueng up a lot of jobs at once, a JSON list of jobs can be piped to glow's stdin: 
 
 ```
-echo '[{"cmd":"ls","arguments":["-l", "-a"],"pri":0,"tube":"foo","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"},{"cmd":"ps","pri":1,"tube":"bar","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"}]' | glow
+$ echo '[{"cmd":"ls","arguments":["-l", "-a"],"pri":0,"tube":"foo","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"},{"cmd":"ps","pri":1,"tube":"bar","delay":0,"mailto":"example@example.com","out":"/tmp/glow.out","workdir":"/tmp/glow"}]' | glow
 ```
 
 ## Errors
 
 Every time a job exits with a non 0 exit status, glow sends a message to a tube on `GLOW_QUEUE` called `GLOW_ERRORS`. beanstalkd clients can listen on `GLOW_ERRORS` to implement custom error handling. 
 
-Failure emails will also be sent to the list of recipients specified by the `-mailto` submit flag.
+If a listener was started with the `-smtp-server` flag set, failure emails will be sent to the list of recipients specified by the `-mailto` submit flag.
+
+```
+$ glow -listen -smtp-server=smtp.example.com:25
+```
+
+```
+$ glow -tube=mytube -mailto=foo@example.com mycmd arg1 arg2
+```
 
 ## Utilities
 
