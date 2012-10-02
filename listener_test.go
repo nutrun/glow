@@ -12,7 +12,7 @@ import (
 
 func createTestMessage(cmd, out, workdir string) (*Message, error) {
 	tokens := strings.Split(cmd, " ")
-	return NewMessage(tokens[0], tokens[1:len(tokens)], "", workdir, out, "testtube", 0, 0)
+	return NewMessage(tokens[0], tokens[1:len(tokens)], "", workdir, out, out, "testtube", 0, 0)
 }
 
 func TestOutput(t *testing.T) {

@@ -12,7 +12,8 @@ var listener *bool = flag.Bool("listen", false, "Start listener")
 var help *bool = flag.Bool("help", false, "Show help")
 var mailto *string = flag.String("mailto", "", "Who to email on failure (comma separated) [submit]")
 var workdir *string = flag.String("workdir", "/tmp", "Directory to run job from [submit]")
-var out *string = flag.String("out", "/dev/null", "File to send job's stdout and stderr [submit]")
+var stdout *string = flag.String("stdout", "/dev/null", "File to send job's stdout [submit]")
+var stderr *string = flag.String("stderr", "/dev/null", "File to send job's stderr [submit]")
 var tube *string = flag.String("tube", "", "Beanstalkd tube to send the job to [submit]")
 var stats *bool = flag.Bool("stats", false, "Show queue stats")
 var drain *string = flag.String("drain", "", "Empty tubes (comma separated)")
@@ -53,7 +54,7 @@ func main() {
 	if *local {
 		executable, arguments := parseCommand()
 		// hack: local doesn't need tube, defaulting it to respect the Message API
-		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *out, "localignore", 0, 0)
+		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *stdout, *stderr, "localignore", 0, 0)
 		if e != nil {
 			log.Fatal(e)
 		}
@@ -107,7 +108,7 @@ func main() {
 		}
 	} else { // Queue up one job
 		executable, arguments := parseCommand()
-		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *out, *tube, *priority, *delay)
+		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *stdout, *stderr, *tube, *priority, *delay)
 		if e != nil {
 			log.Fatalf("ERROR: %s", e)
 		}

@@ -21,15 +21,15 @@ class TestGlowIntegration(unittest.TestCase):
     def test_listener_runs_job(self):
         tmpfilename = temporary_file_name()
         self.listener.start()
-        subprocess.check_call([glow_executable(), '-tube', 'listener_runs_job', '-out', tmpfilename, '/bin/echo', 'listener_runs_job'])
-        self.listener.wait_for_job_completion({'tube': 'listener_runs_job', 'out': tmpfilename})
+        subprocess.check_call([glow_executable(), '-tube', 'listener_runs_job', '-stdout', tmpfilename, '/bin/echo', 'listener_runs_job'])
+        self.listener.wait_for_job_completion({'tube': 'listener_runs_job', 'stdout': tmpfilename})
         with open(tmpfilename, 'r') as outfile:
             self.assertEqual('listener_runs_job\n', outfile.read())
         self.listener.interrupt()
 
     def test_local_runs_job(self):
         tmpfilename = temporary_file_name()
-        subprocess.check_call([glow_executable(), '-local', '-out', tmpfilename, '/bin/echo', 'local_runs_job'])
+        subprocess.check_call([glow_executable(), '-local', '-stdout', tmpfilename, '/bin/echo', 'local_runs_job'])
         with open(tmpfilename, 'r') as outfile:
             self.assertEqual('local_runs_job\n', outfile.read())
 
@@ -40,12 +40,12 @@ class TestGlowIntegration(unittest.TestCase):
 
         glow = subprocess.Popen([glow_executable()], stdin=subprocess.PIPE)
         print >>glow.stdin, cjson.encode([
-                    {'cmd': 'echo', 'args': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'out': tmpfilename1 },
-                    {'cmd': 'echo', 'args': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'out': tmpfilename2 }
+                    {'cmd': 'echo', 'args': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'stdout': tmpfilename1 },
+                    {'cmd': 'echo', 'args': ['submit_many_jobs'], 'tube': 'submit_many_jobs', 'stdout': tmpfilename2 }
                 ])
         glow.stdin.close()
-        self.listener.wait_for_job_completion({'tube': 'submit_many_jobs', 'out': tmpfilename1})
-        self.listener.wait_for_job_completion({'tube': 'submit_many_jobs', 'out': tmpfilename2})
+        self.listener.wait_for_job_completion({'tube': 'submit_many_jobs', 'stdout': tmpfilename1})
+        self.listener.wait_for_job_completion({'tube': 'submit_many_jobs', 'stdout': tmpfilename2})
 
         with open(tmpfilename1, 'r') as outfile:
             self.assertEqual('submit_many_jobs\n', outfile.read())
@@ -57,11 +57,11 @@ class TestGlowIntegration(unittest.TestCase):
         tmpfilename = temporary_file_name()
         self.listener.start()
 
-        subprocess.check_call([glow_executable(), '-tube', 'listener_finishes_job_on_interrupt', '-out', tmpfilename, '%s/sleepthenecho' % HERE, '3',  'listener_finishes_job_on_interrupt'])
-        self.listener.wait_for_job_start({'tube': 'listener_finishes_job_on_interrupt', 'out': tmpfilename})
+        subprocess.check_call([glow_executable(), '-tube', 'listener_finishes_job_on_interrupt', '-stdout', tmpfilename, '%s/sleepthenecho' % HERE, '3',  'listener_finishes_job_on_interrupt'])
+        self.listener.wait_for_job_start({'tube': 'listener_finishes_job_on_interrupt', 'stdout': tmpfilename})
 
         self.listener.interrupt()
-        self.listener.wait_for_job_completion({'tube': 'listener_finishes_job_on_interrupt', 'out': tmpfilename}, seconds=10)
+        self.listener.wait_for_job_completion({'tube': 'listener_finishes_job_on_interrupt', 'stdout': tmpfilename}, seconds=10)
 
         with open(tmpfilename, 'r') as outfile:
             self.assertEqual('listener_finishes_job_on_interrupt\n', outfile.read())
@@ -70,8 +70,8 @@ class TestGlowIntegration(unittest.TestCase):
         tmpfilename = temporary_file_name()
         self.listener.start()
         
-        subprocess.check_call([glow_executable(), '-tube', 'listener_kills_job_on_kill', '-out', tmpfilename, '%s/sleepthenecho' % HERE, '5',  'listener_kills_job_on_kill'])
-        self.listener.wait_for_job_start({'tube': 'listener_kills_job_on_kill', 'out': tmpfilename})
+        subprocess.check_call([glow_executable(), '-tube', 'listener_kills_job_on_kill', '-stdout', tmpfilename, '%s/sleepthenecho' % HERE, '5',  'listener_kills_job_on_kill'])
+        self.listener.wait_for_job_start({'tube': 'listener_kills_job_on_kill', 'stdout': tmpfilename})
         
         self.listener.kill()
         self.listener.wait_for_shutdown()
@@ -115,8 +115,8 @@ class TestGlowIntegration(unittest.TestCase):
         tmpfilename = temporary_file_name()
         self.assertFalse(os.path.exists(tmpfilename))
         self.listener.start()
-        subprocess.check_call([glow_executable(), '-tube', 'job', '-out', tmpfilename, '/bin/echo', 'job'])
-        self.listener.wait_for_job_completion({'tube': 'job', 'out': tmpfilename})
+        subprocess.check_call([glow_executable(), '-tube', 'job', '-stdout', tmpfilename, '/bin/echo', 'job'])
+        self.listener.wait_for_job_completion({'tube': 'job', 'stdout': tmpfilename})
         with open(tmpfilename, 'r') as outfile:
             self.assertEqual('job\n', outfile.read())
         self.listener.interrupt()
@@ -124,13 +124,12 @@ class TestGlowIntegration(unittest.TestCase):
     def test_append_to_output_file_if_exists(self):
         tmpfilename = temporary_file_name()
         self.listener.start()
-        subprocess.check_call([glow_executable(), '-tube', 'job1', '-out', tmpfilename, '/bin/echo', 'job1'])
-        subprocess.check_call([glow_executable(), '-tube', 'job2', '-out', tmpfilename, '/bin/echo', 'job2'])
-        self.listener.wait_for_job_completion({'tube': 'job2', 'out': tmpfilename})
+        subprocess.check_call([glow_executable(), '-tube', 'job1', '-stdout', tmpfilename, '/bin/echo', 'job1'])
+        subprocess.check_call([glow_executable(), '-tube', 'job2', '-stdout', tmpfilename, '/bin/echo', 'job2'])
+        self.listener.wait_for_job_completion({'tube': 'job2', 'stdout': tmpfilename})
         with open(tmpfilename, 'r') as outfile:
             self.assertEqual('job1\njob2\n', outfile.read())
-        self.listener.interrupt()
-    
+        self.listener.interrupt()    
 
 debug = False
 

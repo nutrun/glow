@@ -41,32 +41,36 @@ func (this *Runner) execute(msg *Message) error {
 
 	cmd := exec.Command(msg.Executable, msg.Arguments...)
 
-	outputDir := filepath.Dir(msg.Out)
-	os.MkdirAll(outputDir, 0755)
-
-	f, e := os.OpenFile(msg.Out, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	stdoutDir := filepath.Dir(msg.Stdout)
+	os.MkdirAll(stdoutDir, 0755)
+	stderrDir := filepath.Dir(msg.Stderr)
+	os.MkdirAll(stderrDir, 0755)
+	stdoutF, e := os.OpenFile(msg.Stdout, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if e != nil {
 		this.catch(msg, e)
 		return e
 	}
-
-	defer f.Close()
-
-	cmd.Stderr = f
-	cmd.Stdout = f
+	defer stdoutF.Close()
+	stderrF, e := os.OpenFile(msg.Stderr, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if e != nil {
+		this.catch(msg, e)
+		return e
+	}
+	defer stderrF.Close()
+	cmd.Stdout = stdoutF
+	cmd.Stderr = stderrF
 	if this.verbose {
 		log.Printf("INFO: Running command '%s %s'\n", msg.Executable, strings.Join(msg.Arguments, " "))
-		log.Printf("INFO: Output to %s\n", msg.Out)
+		log.Printf("INFO: STDOUT to %s\n", msg.Stdout)
+		log.Printf("INFO: STDERR to %s\n", msg.Stderr)
 	}
 	e = cmd.Start()
 	if e != nil {
 		this.catch(msg, e)
 		return e
 	}
-
 	this.proc = cmd.Process
 	e = cmd.Wait()
-
 	if e != nil {
 		this.catch(msg, e)
 	}

@@ -5,7 +5,7 @@ import (
 )
 
 func TestTubeRequired(t *testing.T) {
-	_, e := NewMessage("executable", []string{"arg"}, "", "", "", "", 0, 0)
+	_, e := NewMessage("executable", []string{"arg"}, "", "", "", "", "", 0, 0)
 	if e == nil {
 		t.Errorf("Should have missing tube error")
 	}
@@ -24,7 +24,7 @@ func TestTubeRequired(t *testing.T) {
 }
 
 func TestValidJSONUnmarshall(t *testing.T) {
-	jsonstr := `[{"tube": "testtube", "cmd": "echo", "args": ["arg1", "arg2"], "out": "out.txt", "pri": 15, "delay": 120}]`
+	jsonstr := `[{"tube": "testtube", "cmd": "echo", "args": ["arg1", "arg2"], "stdout": "out.txt", "stderr": "err.txt", "pri": 15, "delay": 120}]`
 	messages, e := MessagesFromJSON([]byte(jsonstr))
 	if e != nil {
 		t.Fatal(e)
@@ -45,8 +45,11 @@ func TestValidJSONUnmarshall(t *testing.T) {
 	if msg.Arguments[1] != "arg2" {
 		t.Errorf("[%s] isn't [%s]", msg.Arguments[1], "arg2")
 	}
-	if msg.Out != "out.txt" {
-		t.Errorf("[%s] isn't [%s]", msg.Out, "out.txt")
+	if msg.Stdout != "out.txt" {
+		t.Errorf("[%s] isn't [%s]", msg.Stdout, "out.txt")
+	}
+	if msg.Stderr != "err.txt" {
+		t.Errorf("[%s] isn't [%s]", msg.Stderr, "err.txt")
 	}
 	if msg.Priority != 15 {
 		t.Errorf("[%d] isn't [%d]", msg.Priority, 15)
@@ -57,7 +60,7 @@ func TestValidJSONUnmarshall(t *testing.T) {
 }
 
 func TestDefaultWorkdir(t *testing.T) {
-	msg, e := NewMessage("executable", []string{"arg"}, "", "", "", "testtube", 0, 0)
+	msg, e := NewMessage("executable", []string{"arg"}, "", "", "", "", "testtube", 0, 0)
 	if e != nil {
 		t.Fatal(e)
 	}

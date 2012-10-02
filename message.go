@@ -1,27 +1,31 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+const MAX_OUTFILE_READ_LEN = 16 * 1024
 
 type Message struct {
 	Executable string   `json:"cmd"`
 	Arguments  []string `json:"args"`
 	Mailto     string   `json:"mailto"`
 	Workdir    string   `json:"workdir"`
-	Out        string   `json:"out"`
+	Stdout     string   `json:"stdout"`
+	Stderr     string   `json:"stderr"`
 	Tube       string   `json:"tube"`
 	Priority   int      `json:"pri"`
 	Delay      int      `json:"delay"`
 }
 
-func NewMessage(executable string, args []string, mailto, workdir, out, tube string, pri, delay int) (*Message, error) {
+func NewMessage(executable string, args []string, mailto, workdir, stdout, stderr, tube string, pri, delay int) (*Message, error) {
 	if tube == "" {
 		return nil, errors.New("Missing required param -tube")
 	}
@@ -32,10 +36,13 @@ func NewMessage(executable string, args []string, mailto, workdir, out, tube str
 	if e != nil {
 		return nil, e
 	}
-	if out == "" {
-		out = "/dev/null"
+	if stdout == "" {
+		stdout = "/dev/null"
 	}
-	return &Message{executable, args, mailto, absoluteWorkdir, out, tube, pri, delay}, nil
+	if stderr == "" {
+		stderr = "/dev/null"
+	}
+	return &Message{executable, args, mailto, absoluteWorkdir, stdout, stderr, tube, pri, delay}, nil
 }
 
 func MessagesFromJSON(jsonstr []byte) ([]*Message, error) {
@@ -46,7 +53,7 @@ func MessagesFromJSON(jsonstr []byte) ([]*Message, error) {
 	}
 	messages := make([]*Message, len(vals))
 	for i, m := range vals {
-		msg, e := NewMessage(m.Executable, m.Arguments, m.Mailto, m.Workdir, m.Out, m.Tube, m.Priority, m.Delay)
+		msg, e := NewMessage(m.Executable, m.Arguments, m.Mailto, m.Workdir, m.Stdout, m.Stderr, m.Tube, m.Priority, m.Delay)
 		if e != nil {
 			return nil, e
 		}
@@ -63,26 +70,44 @@ func (this *Message) getCommand() string {
 	return cmd
 }
 
-func (this *Message) readOut() string {
-	if this.Out == "/dev/stdout" || this.Out == "/dev/stderr" {
-		return ""
+// Read up to MAX_OUTFILE_READ_LEN from the files we send stdout or stderr to
+func (this *Message) readOutputFile(path string) ([]byte, error) {
+	if path == "/dev/stdout" || path == "/dev/stderr" {
+		return []byte{}, nil
 	}
+	f, e := os.Open(path)
+	if e != nil {
+		return nil, e
+	}
+	br := bufio.NewReader(f)
+	lr := &io.LimitedReader{br, MAX_OUTFILE_READ_LEN}
+	buf := make([]byte, 0)
+	_, e = lr.Read(buf)
+	if e != nil {
+		return nil, e
+	}
+	return buf, nil
+}
+
+func (this *Message) readOut() string {
 	hostname, _ := os.Hostname()
 	content := make([]byte, 0)
 	content = append(content, []byte(fmt.Sprintf("hostname: %v\n", hostname))...)
-
-	info, err := os.Stat(this.Out)
-	if err != nil {
-		content = append(content, []byte(fmt.Sprintf("Could not read job log from [%s]. %s", this.Out, err.Error()))...)
-		return string(content)
-	}
-	if info.Size() > 60000 {
-		content = append(content, []byte(fmt.Sprintf("Could not send job log [%s]. File too big", this.Out))...)
+	stdout, e := this.readOutputFile(this.Stdout)
+	if e != nil {
+		content = append(content, []byte(
+			fmt.Sprintf("Could not read stdout output from [%s]. %s\n", this.Stdout, e))...)
 	} else {
-		content, err = ioutil.ReadFile(this.Out)
-		if err != nil {
-			content = append(content, []byte(fmt.Sprintf("Could not read job log from [%s]", this.Out))...)
-		}
+		content = append(content, []byte("STDOUT:\n")...)
+		content = append(content, stdout...)
+	}
+	stderr, e := this.readOutputFile(this.Stderr)
+	if e != nil {
+		content = append(content, []byte(
+			fmt.Sprintf("Could not read stderr output from [%s]. %s\n", this.Stderr, e))...)
+	} else {
+		content = append(content, []byte("STDERR:\n")...)
+		content = append(content, stderr...)
 	}
 	return string(content)
 }
