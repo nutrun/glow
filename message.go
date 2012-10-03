@@ -81,12 +81,12 @@ func (this *Message) readOutputFile(path string) ([]byte, error) {
 	}
 	br := bufio.NewReader(f)
 	lr := &io.LimitedReader{br, MAX_OUTFILE_READ_LEN}
-	buf := make([]byte, 0)
-	_, e = lr.Read(buf)
+	buf := make([]byte, MAX_OUTFILE_READ_LEN)
+	n, e := lr.Read(buf)
 	if e != nil {
 		return nil, e
 	}
-	return buf, nil
+	return buf[:n], nil
 }
 
 func (this *Message) readOut() string {
@@ -100,6 +100,7 @@ func (this *Message) readOut() string {
 	} else {
 		content = append(content, []byte("STDOUT:\n")...)
 		content = append(content, stdout...)
+		content = append(content, []byte("\n")...)
 	}
 	stderr, e := this.readOutputFile(this.Stderr)
 	if e != nil {

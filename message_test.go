@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -66,5 +69,34 @@ func TestDefaultWorkdir(t *testing.T) {
 	}
 	if msg.Workdir != "/tmp" {
 		t.Errorf("[%s] isn't [%s]", msg.Workdir, "/tmp")
+	}
+}
+
+func TestReadOut(t *testing.T) {
+	logfile := "glowtestreadout.log"
+	logdata := "log data whatevs"
+	e := ioutil.WriteFile(logfile, []byte(logdata), os.ModePerm)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer func(t *testing.T, logfile string) {
+		e := os.Remove(logfile)
+		if e != nil {
+			t.Fatal(e)
+		}
+	}(t, logfile)
+	msg, e := NewMessage("executable", []string{"arg"}, "email", "workdir", logfile, logfile, "testtube", 0, 0)
+	hostname, e := os.Hostname()
+	if e != nil {
+		t.Fatal(e)
+	}
+	expectedOutput := fmt.Sprintf(`hostname: %s
+STDOUT:
+log data whatevs
+STDERR:
+log data whatevs`, hostname)
+	actualOutput := msg.readOut()
+	if expectedOutput != actualOutput {
+		t.Errorf("[%s] isn't [%s]", expectedOutput, actualOutput)
 	}
 }
