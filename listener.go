@@ -16,15 +16,17 @@ type Listener struct {
 	verbose  bool
 	jobqueue *JobQueue
 	sig      os.Signal
+	logpath  string
+	logfile  *os.File
 }
 
 func NewListener(verbose, inclusive bool, filter []string, logpath string) (*Listener, error) {
 	this := new(Listener)
-	logfile, err := os.OpenFile(logpath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	this.logpath = logpath
+	err := this.resetLog()
 	if err != nil {
 		return nil, err
 	}
-	this.logger = log.New(logfile, "", log.LstdFlags)
 	q, err := lentil.Dial(Config.QueueAddr)
 	if err != nil {
 		return nil, err
@@ -81,15 +83,36 @@ listenerloop:
 // Wait for currently running job to finish before exiting on SIGTERM and SIGINT
 func (this *Listener) trap() {
 	receivedSignal := make(chan os.Signal)
-	signal.Notify(receivedSignal, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(receivedSignal, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 	this.sig = <-receivedSignal
 	if this.sig.String() == syscall.SIGTERM.String() {
-		this.logger.Printf("Got signal %d. Killing current job.", this.sig)
+		this.logger.Printf("Got signal %d. Killing current job.\n", this.sig)
 		if this.proc != nil {
 			this.proc.Kill()
 		}
 		os.Exit(1)
+	} else if this.sig.String() == syscall.SIGHUP.String() {
+		this.logger.Printf("Got signal %d. Reopening log.\n", this.sig)
+		e := this.resetLog()
+		if e != nil {
+			panic(e)
+		}
+		this.sig = nil
+	} else if this.sig.String() == syscall.SIGINT.String() {
+		this.logger.Printf("Got signal %d. Waiting for current job to complete.\n", this.sig)
 	}
 	go this.trap()
-	this.logger.Printf("Got signal %d. Waiting for current job to complete.\n", this.sig)
+}
+
+func (this *Listener) resetLog() error {
+	if this.logfile != nil {
+		this.logfile.Close() // Ignoring this error...
+	}
+	logfile, e := os.OpenFile(this.logpath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if e != nil {
+		return e
+	}
+	this.logfile = logfile
+	this.logger = log.New(this.logfile, "", log.LstdFlags)
+	return nil
 }
