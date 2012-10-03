@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/nutrun/lentil"
-	"log"
+	"os"
 	"strings"
 )
 
@@ -28,7 +28,7 @@ func NewClient(verbose bool) (*Client, error) {
 func (this *Client) put(msg *Message) error {
 	message, e := json.Marshal(msg)
 	if this.verbose {
-		log.Printf("QUEUEING UP: %s\n", message)
+		fmt.Fprintf(os.Stderr, "QUEUEING UP: %s\n", message)
 	}
 	if e != nil {
 		return e
@@ -98,7 +98,7 @@ func (this *Client) drain(tubes string) error {
 		}
 	}
 	drainedJobs = append(drainedJobs, []byte("\n]")...)
-	log.Printf("%s", string(drainedJobs))
+	fmt.Fprintf(os.Stderr, "%s", string(drainedJobs))
 	return nil
 }
 
@@ -108,7 +108,7 @@ func (this *Client) pause(tubes string, delay int) error {
 		if e != nil {
 			return e
 		}
-		log.Printf("Paused %s for %d seconds", tubes, delay)
+		fmt.Fprintf(os.Stderr, "Paused %s for %d seconds", tubes, delay)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -27,11 +28,11 @@ var pausedelay *int = flag.Int("pause-delay", 0, "How many seconds to pause tube
 var mailfrom *string = flag.String("mail-from", "glow@example.com", "Email 'from' field [listen]")
 var smtpserver *string = flag.String("smtp-server", "", "Server to use for sending emails [listen]")
 var deps *string = flag.String("deps", "", "Path to tube dependency config file [listen]")
+var logpath *string = flag.String("log", "/dev/stderr", "Path to log file [listen]")
 
 var Config *Configuration
 
 func main() {
-	log.SetFlags(0)
 	flag.Parse()
 	Config = NewConfig(*deps, *smtpserver, *mailfrom)
 	if *listener {
@@ -40,9 +41,10 @@ func main() {
 		if *exclude != "" {
 			filter = strings.Split(*exclude, ",")
 		}
-		l, e := NewListener(*verbose, include, filter)
+		l, e := NewListener(*verbose, include, filter, *logpath)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 		l.run()
 		return
@@ -56,38 +58,50 @@ func main() {
 		// hack: local doesn't need tube, defaulting it to respect the Message API
 		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *stdout, *stderr, "localignore", 0, 0)
 		if e != nil {
-			log.Fatal(e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
-		runner, e := NewRunner(*verbose)
+		logfile, e := os.OpenFile(*logpath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 		if e != nil {
-			log.Fatal(e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
+		}
+		runner, e := NewRunner(*verbose, log.New(logfile, "", log.LstdFlags))
+		if e != nil {
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 		e = runner.execute(msg)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 		return
 	}
 
 	c, e := NewClient(*verbose)
 	if e != nil {
-		log.Fatalf("ERROR: %s", e)
+		fmt.Fprintln(os.Stderr, e)
+		os.Exit(1)
 	}
 
 	if *drain != "" {
 		e = c.drain(*drain)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 	} else if *pause != "" {
 		if *pausedelay == 0 {
-			log.Fatal("Usage: glow -pause=<tube1,tube2,...> -pause-delay=<seconds>")
+			fmt.Fprintln(os.Stderr, "Usage: glow -pause=<tube1,tube2,...> -pause-delay=<seconds>")
+			os.Exit(1)
 		}
 		e = c.pause(*pause, *pausedelay)
 	} else if *stats {
 		e = c.stats()
 		if e != nil {
-			log.Fatalf("ERROR: %s", e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 	} else if len(flag.Args()) == 0 { // Queue up many jobs from STDIN
 		in := bufio.NewReaderSize(os.Stdin, 1024*1024)
@@ -98,23 +112,27 @@ func main() {
 				if e.Error() == "EOF" {
 					break
 				}
-				log.Fatalf("ERROR: %s", e)
+				fmt.Fprintln(os.Stderr, e)
+				os.Exit(1)
 			}
 			input = append(input, line...)
 		}
 		e = c.putMany(input)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 	} else { // Queue up one job
 		executable, arguments := parseCommand()
 		msg, e := NewMessage(executable, arguments, *mailto, *workdir, *stdout, *stderr, *tube, *priority, *delay)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 		e = c.put(msg)
 		if e != nil {
-			log.Fatalf("ERROR: %s", e)
+			fmt.Fprintln(os.Stderr, e)
+			os.Exit(1)
 		}
 	}
 }

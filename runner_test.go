@@ -10,7 +10,15 @@ import (
 )
 
 func TestRunnerOutput(t *testing.T) {
-	runner := new(Runner)
+	devnull, e := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if e != nil {
+		t.Fatal(e)
+	}
+	l := log.New(devnull, "", log.LstdFlags)
+	runner, e := NewRunner(false, l)
+	if e != nil {
+		t.Fatal(e)
+	}
 	msg, e := createTestMessage("echo you suck", "test.out", ".")
 	if e != nil {
 		t.Fatal(e)
@@ -30,7 +38,12 @@ func TestRunnerOutput(t *testing.T) {
 }
 
 func TestRunnerShouldPutErrorOnBeanstalk(t *testing.T) {
-	runner, err := NewRunner(false)
+	devnull, err := os.OpenFile(os.DevNull, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := log.New(devnull, "", log.LstdFlags)
+	runner, err := NewRunner(false, l)
 	if err != nil {
 		t.Fatal(err)
 	}

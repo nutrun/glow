@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 	"testing"
@@ -36,11 +34,10 @@ func TestOutput(t *testing.T) {
 }
 
 func TestPutErrorOnBeanstalk(t *testing.T) {
-	listener, err := NewListener(false, false, []string{})
+	listener, err := NewListener(false, false, []string{}, "/dev/null")
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.SetOutput(bytes.NewBufferString(""))
 	msg, e := createTestMessage("lsdonmybrain", "test.out", ".")
 	if e != nil {
 		t.Fatal(e)

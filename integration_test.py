@@ -7,6 +7,7 @@ import unittest
 from select import select
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+debug = False
 
 class TestGlowIntegration(unittest.TestCase):
 
@@ -131,7 +132,7 @@ class TestGlowIntegration(unittest.TestCase):
             self.assertEqual('job1\njob2\n', outfile.read())
         self.listener.interrupt()    
 
-debug = False
+
 
 class Listener:
     def __init__(self):
@@ -171,7 +172,8 @@ class Listener:
             fds, _, _ = select([self.process.stderr], [], [], seconds)
             if fds != [self.process.stderr]:
                 raise Exception('timed out waiting for {0} {1}'.format(status, job_desc))
-            line = self.process.stderr.readline()
+            line = self.process.stderr.readline().split(' ')[2:] # get rid of log date/time
+            line = " ".join(line)
             if debug: print line
             if line.startswith(status):
                 job = cjson.decode(line[len(status):])

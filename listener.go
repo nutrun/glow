@@ -18,14 +18,17 @@ type Listener struct {
 	sig      os.Signal
 }
 
-func NewListener(verbose, inclusive bool, filter []string) (*Listener, error) {
+func NewListener(verbose, inclusive bool, filter []string, logpath string) (*Listener, error) {
 	this := new(Listener)
-	q, err := lentil.Dial(Config.QueueAddr)
-
+	logfile, err := os.OpenFile(logpath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
 	}
-
+	this.logger = log.New(logfile, "", log.LstdFlags)
+	q, err := lentil.Dial(Config.QueueAddr)
+	if err != nil {
+		return nil, err
+	}
 	this.q = q
 	this.verbose = verbose
 	this.jobqueue = NewJobQueue(this.q, inclusive, filter)
@@ -42,7 +45,7 @@ listenerloop:
 		}
 		e := Config.LoadDeps()
 		if e != nil {
-			log.Fatalf("Error loading dependency config: %s\n", e)
+			this.logger.Fatalf("Error loading dependency config: %s\n", e)
 		}
 		job, e := this.jobqueue.Next()
 		if e != nil {
@@ -50,10 +53,10 @@ listenerloop:
 				time.Sleep(time.Second)
 				goto listenerloop
 			}
-			log.Fatal(e)
+			this.logger.Fatal(e)
 		}
 		if this.verbose {
-			log.Printf("RUNNING: %s", job.Body)
+			this.logger.Printf("RUNNING: %s", job.Body)
 		}
 		msg := new(Message)
 		e = json.Unmarshal([]byte(job.Body), &msg)
@@ -63,10 +66,10 @@ listenerloop:
 		e = this.execute(msg)
 		if e == nil {
 			if this.verbose {
-				log.Printf("COMPLETE: %s", job.Body)
+				this.logger.Printf("COMPLETE: %s", job.Body)
 			}
 		} else {
-			log.Printf("FAILED: %s", job.Body)
+			this.logger.Printf("FAILED: %s", job.Body)
 		}
 		e = this.jobqueue.Delete(job.Id)
 		if e != nil {
@@ -81,12 +84,12 @@ func (this *Listener) trap() {
 	signal.Notify(receivedSignal, syscall.SIGTERM, syscall.SIGINT)
 	this.sig = <-receivedSignal
 	if this.sig.String() == syscall.SIGTERM.String() {
-		log.Printf("Got signal %d. Killing current job.", this.sig)
+		this.logger.Printf("Got signal %d. Killing current job.", this.sig)
 		if this.proc != nil {
 			this.proc.Kill()
 		}
 		os.Exit(1)
 	}
 	go this.trap()
-	log.Printf("Got signal %d. Waiting for current job to complete.\n", this.sig)
+	this.logger.Printf("Got signal %d. Waiting for current job to complete.\n", this.sig)
 }

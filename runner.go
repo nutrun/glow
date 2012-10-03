@@ -16,10 +16,12 @@ type Runner struct {
 	q       *lentil.Beanstalkd
 	proc    *os.Process
 	verbose bool
+	logger  *log.Logger
 }
 
-func NewRunner(verbose bool) (*Runner, error) {
+func NewRunner(verbose bool, logger *log.Logger) (*Runner, error) {
 	this := new(Runner)
+	this.logger = logger
 	q, err := lentil.Dial(Config.QueueAddr)
 
 	if err != nil {
@@ -60,9 +62,9 @@ func (this *Runner) execute(msg *Message) error {
 	cmd.Stdout = stdoutF
 	cmd.Stderr = stderrF
 	if this.verbose {
-		log.Printf("INFO: Running command '%s %s'\n", msg.Executable, strings.Join(msg.Arguments, " "))
-		log.Printf("INFO: STDOUT to %s\n", msg.Stdout)
-		log.Printf("INFO: STDERR to %s\n", msg.Stderr)
+		this.logger.Printf("INFO: Running command '%s %s'\n", msg.Executable, strings.Join(msg.Arguments, " "))
+		this.logger.Printf("INFO: STDOUT to %s\n", msg.Stdout)
+		this.logger.Printf("INFO: STDERR to %s\n", msg.Stderr)
 	}
 	e = cmd.Start()
 	if e != nil {
@@ -80,7 +82,7 @@ func (this *Runner) execute(msg *Message) error {
 
 // Log and email errors
 func (this *Runner) catch(msg *Message, e error) {
-	log.Printf("ERROR: %s\n", e)
+	this.logger.Printf("ERROR: %s\n", e)
 	this.mail(msg, e)
 	this.publishError(msg, e)
 }
@@ -88,17 +90,17 @@ func (this *Runner) catch(msg *Message, e error) {
 func (this *Runner) publishError(msg *Message, e error) {
 	err := this.q.Use(Config.errorQueue)
 	if err != nil {
-		log.Printf("ERROR: %s\n", err)
+		this.logger.Printf("ERROR: %s\n", err)
 		return
 	}
 	payload, err := json.Marshal(NewErrMessage(msg, e))
 	if err != nil {
-		log.Printf("ERROR: %s\n", err)
+		this.logger.Printf("ERROR: %s\n", err)
 		return
 	}
 	_, err = this.q.Put(0, 0, 60*60, payload)
 	if err != nil {
-		log.Printf("ERROR: %s\n", err)
+		this.logger.Printf("ERROR: %s\n", err)
 	}
 }
 
@@ -115,6 +117,6 @@ func (this *Runner) mail(msg *Message, e error) {
 	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s\n%s", hostname, subject, e, msg.readOut()))
 	e = smtp.SendMail(Config.SmtpServer, nil, Config.MailFrom, to, []byte(mail))
 	if e != nil {
-		log.Printf("ERROR: %s\n", e)
+		this.logger.Printf("ERROR: %s\n", e)
 	}
 }
