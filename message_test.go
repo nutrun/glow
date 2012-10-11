@@ -91,10 +91,12 @@ func TestReadOut(t *testing.T) {
 		t.Fatal(e)
 	}
 	expectedOutput := fmt.Sprintf(`hostname: %s
+stdout: %s
+stderr: %s
 STDOUT:
 log data whatevs
 STDERR:
-log data whatevs`, hostname)
+log data whatevs`, hostname, logfile, logfile)
 	actualOutput := msg.readOut()
 	if expectedOutput != actualOutput {
 		t.Errorf("[%s] isn't [%s]", expectedOutput, actualOutput)
