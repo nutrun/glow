@@ -92,7 +92,7 @@ func (this *Message) readOutputFile(path string) ([]byte, error) {
 func (this *Message) readOut() string {
 	hostname, _ := os.Hostname()
 	content := make([]byte, 0)
-	content = append(content, []byte(fmt.Sprintf("hostname: %v\n", hostname))...)
+	content = append(content, []byte(fmt.Sprintf("hostname: %v\nstdout: %v\nstderr: %v\n", hostname, this.Stdout, this.Stderr))...)
 	stdout, e := this.readOutputFile(this.Stdout)
 	if e != nil {
 		content = append(content, []byte(
