@@ -73,8 +73,7 @@ func (this *Client) stats() error {
 }
 
 func (this *Client) drain(tubes string) error {
-	drainedJobs := []byte("[\n")
-	isFirstDrained := true
+	drainedJobs := make([]string, 0)
 	for _, tube := range strings.Split(tubes, ",") {
 		_, err := this.q.Watch(tube)
 		if err != nil {
@@ -84,21 +83,22 @@ func (this *Client) drain(tubes string) error {
 		if err != nil {
 			return err
 		}
-
-		for job, err := this.q.ReserveWithTimeout(0); err == nil; job, err = this.q.ReserveWithTimeout(0) {
-			this.q.Delete(job.Id)
-			if !isFirstDrained {
-				drainedJobs = append(drainedJobs, []byte(",\n")...)
+		for {
+			job, err := this.q.ReserveWithTimeout(0)
+			if err != nil && strings.HasPrefix(err.Error(), "TIMED_OUT") {
+				break
 			}
-			drainedJobs = append(drainedJobs, job.Body...)
-			isFirstDrained = false
-		}
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+			err = this.q.Delete(job.Id)
+			if err != nil {
+				return err
+			}
+			drainedJobs = append(drainedJobs, string(job.Body))
 		}
 	}
-	drainedJobs = append(drainedJobs, []byte("\n]")...)
-	fmt.Fprintf(os.Stderr, "%s", string(drainedJobs))
+	fmt.Fprintf(os.Stderr, "[%s]", strings.Join(drainedJobs, ","))
 	return nil
 }
 
