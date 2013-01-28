@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/nutrun/lentil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -75,7 +76,33 @@ func (this *Client) stats() error {
 func (this *Client) drain(tubes string) error {
 	drainedJobs := make([]string, 0)
 	for _, tube := range strings.Split(tubes, ",") {
-		_, err := this.q.Watch(tube)
+
+		// Before draining a tube, first kick the delayed jobs
+
+		stats, err := this.q.StatsTube(tube)
+		if err != nil {
+			return err
+		}
+		delayedJobs, err := strconv.ParseInt(stats["current-jobs-delayed"], 10, 32)
+		if err != nil {
+			return err
+		}
+
+		err = this.q.Use(tube)
+		if err != nil {
+			return err
+		}
+
+		this.q.Kick(int(delayedJobs))
+
+		err = this.q.Use("default")
+		if err != nil {
+			return err
+		}
+
+		// Now drain jobs until there are none left
+
+		_, err = this.q.Watch(tube)
 		if err != nil {
 			return err
 		}
