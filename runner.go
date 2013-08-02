@@ -41,7 +41,7 @@ func (this *Runner) execute(msg *Message) error {
 		return e
 	}
 
-	cmd := exec.Command(msg.Executable, msg.Arguments...)
+	cmd := exec.Command("su", msg.User, "-c", msg.getCommand())
 
 	stdoutDir := filepath.Dir(msg.Stdout)
 	os.MkdirAll(stdoutDir, 0755)

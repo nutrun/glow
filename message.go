@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 )
@@ -23,6 +24,7 @@ type Message struct {
 	Tube       string   `json:"tube"`
 	Priority   int      `json:"pri"`
 	Delay      int      `json:"delay"`
+	User       string   `json:user`
 }
 
 func NewMessage(executable string, args []string, mailto, workdir, stdout, stderr, tube string, pri, delay int) (*Message, error) {
@@ -42,7 +44,11 @@ func NewMessage(executable string, args []string, mailto, workdir, stdout, stder
 	if stderr == "" {
 		stderr = "/dev/null"
 	}
-	return &Message{executable, args, mailto, absoluteWorkdir, stdout, stderr, tube, pri, delay}, nil
+	u, e := user.Current()
+	if e != nil {
+		return nil, e
+	}
+	return &Message{executable, args, mailto, absoluteWorkdir, stdout, stderr, tube, pri, delay, u.Username}, nil
 }
 
 func MessagesFromJSON(jsonstr []byte) ([]*Message, error) {
