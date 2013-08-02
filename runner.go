@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"os/user"
 )
 
 type Runner struct {
@@ -41,7 +42,18 @@ func (this *Runner) execute(msg *Message) error {
 		return e
 	}
 
-	cmd := exec.Command("su", msg.User, "-c", msg.getCommand())
+	u, e := user.Current()
+	if (e != nil) {
+		this.catch(msg, e)
+		return e
+	}
+	
+	var cmd *exec.Cmd
+	if u.Username != msg.User {
+		cmd = exec.Command("su", msg.User, "-c", msg.getCommand())
+	} else {
+		cmd = exec.Command(msg.Executable, msg.Arguments...)
+	}
 
 	stdoutDir := filepath.Dir(msg.Stdout)
 	os.MkdirAll(stdoutDir, 0755)
