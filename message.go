@@ -25,6 +25,7 @@ type Message struct {
 	Priority   int      `json:"pri"`
 	Delay      int      `json:"delay"`
 	User       string   `json:user`
+	Env        []string `json:env`
 }
 
 func NewMessage(executable string, args []string, mailto, workdir, stdout, stderr, tube string, pri, delay int) (*Message, error) {
@@ -48,7 +49,7 @@ func NewMessage(executable string, args []string, mailto, workdir, stdout, stder
 	if e != nil {
 		return nil, e
 	}
-	return &Message{executable, args, mailto, absoluteWorkdir, stdout, stderr, tube, pri, delay, u.Username}, nil
+	return &Message{executable, args, mailto, absoluteWorkdir, stdout, stderr, tube, pri, delay, u.Username, os.Environ()}, nil
 }
 
 func MessagesFromJSON(jsonstr []byte) ([]*Message, error) {

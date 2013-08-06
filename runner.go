@@ -8,9 +8,9 @@ import (
 	"net/smtp"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
-	"os/user"
 )
 
 type Runner struct {
@@ -43,13 +43,15 @@ func (this *Runner) execute(msg *Message) error {
 	}
 
 	u, e := user.Current()
-	if (e != nil) {
+	if e != nil {
 		this.catch(msg, e)
 		return e
 	}
-	
+
 	var cmd *exec.Cmd
+
 	if u.Username != msg.User {
+		cmd.Env = msg.Env
 		cmd = exec.Command("su", msg.User, "-c", msg.getCommand())
 	} else {
 		cmd = exec.Command(msg.Executable, msg.Arguments...)
