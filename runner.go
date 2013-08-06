@@ -51,8 +51,8 @@ func (this *Runner) execute(msg *Message) error {
 	var cmd *exec.Cmd
 
 	if u.Username != msg.User {
-		cmd.Env = msg.Env
 		cmd = exec.Command("su", msg.User, "-c", msg.getCommand())
+		cmd.Env = msg.Env
 	} else {
 		cmd = exec.Command(msg.Executable, msg.Arguments...)
 	}
