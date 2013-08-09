@@ -27,6 +27,7 @@ func NewListener(verbose, inclusive bool, filter []string, logpath string) (*Lis
 	if err != nil {
 		return nil, err
 	}
+	lentil.ReaderSize = 65536
 	q, err := lentil.Dial(Config.QueueAddr)
 	if err != nil {
 		return nil, err
