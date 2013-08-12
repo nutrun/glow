@@ -29,7 +29,7 @@ var mailfrom *string = flag.String("mail-from", "glow@example.com", "Email 'from
 var smtpserver *string = flag.String("smtp-server", "", "Server to use for sending emails [listen]")
 var deps *string = flag.String("deps", "", "Path to tube dependency config file [listen]")
 var logpath *string = flag.String("log", "/dev/stderr", "Path to log file [listen]")
-
+var mlen *int = flag.Int("mlen", 65536, "Max length of messeges sent to beanstalk [specified in bytes]")
 var Config *Configuration
 
 func main() {
@@ -41,7 +41,7 @@ func main() {
 		if *exclude != "" {
 			filter = strings.Split(*exclude, ",")
 		}
-		l, e := NewListener(*verbose, include, filter, *logpath)
+		l, e := NewListener(*verbose, include, filter, *logpath, *mlen)
 		if e != nil {
 			fmt.Fprintln(os.Stderr, e)
 			os.Exit(1)
