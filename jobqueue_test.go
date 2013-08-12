@@ -166,7 +166,11 @@ func put(t *testing.T, jobName, tube string, delay int, q *lentil.Beanstalkd) {
 }
 
 func connect(t *testing.T) *lentil.Beanstalkd {
-	q, e := lentil.Dial(os.Getenv("GLOW_QUEUE"))
+	gq := os.Getenv("GLOW_QUEUE")
+	if gq == "" {
+		gq = "localhost:11300"
+	}
+	q, e := lentil.Dial(gq)
 	if e != nil {
 		t.Fatal(e)
 	}
