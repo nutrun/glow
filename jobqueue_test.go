@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/nutrun/lentil"
 	"testing"
+	"os"
 )
 
 func resetConfig() {
@@ -165,7 +166,7 @@ func put(t *testing.T, jobName, tube string, delay int, q *lentil.Beanstalkd) {
 }
 
 func connect(t *testing.T) *lentil.Beanstalkd {
-	q, e := lentil.Dial("0.0.0.0:11300")
+	q, e := lentil.Dial(os.Getenv("GLOW_QUEUE"))
 	if e != nil {
 		t.Fatal(e)
 	}
