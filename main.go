@@ -29,7 +29,7 @@ var mailfrom *string = flag.String("mail-from", "glow@example.com", "Email 'from
 var smtpserver *string = flag.String("smtp-server", "", "Server to use for sending emails [listen]")
 var deps *string = flag.String("deps", "", "Path to tube dependency config file [listen]")
 var logpath *string = flag.String("log", "/dev/stderr", "Path to log file [listen]")
-var mlen *int = flag.Int("mlen", 65536, "Max length of messeges sent to beanstalk [specified in bytes]")
+var mlen *int = flag.Int("mlen", 65536, "Max length of messeges sent to beanstalk in bytes [submit]")
 var Config *Configuration
 
 func main() {
