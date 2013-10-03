@@ -100,7 +100,7 @@ func queryTubes(q *lentil.Beanstalkd) (map[string]*Tube, error) {
 		}
 		tubestats, e := q.StatsTube(tube)
 		if e != nil {
-			return nil, e
+			continue
 		}
 		ready, _ := strconv.Atoi(tubestats["current-jobs-ready"])
 		reserved, _ := strconv.Atoi(tubestats["current-jobs-reserved"])
