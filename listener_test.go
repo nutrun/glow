@@ -34,7 +34,7 @@ func TestOutput(t *testing.T) {
 }
 
 func TestPutErrorOnBeanstalk(t *testing.T) {
-	listener, err := NewListener(false, false, []string{}, "/dev/null", 65536)
+	listener, err := NewListener(false, false, []string{}, "/dev/null")
 	if err != nil {
 		t.Fatal(err)
 	}

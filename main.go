@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/nutrun/lentil"
 	"log"
 	"os"
 	"strings"
@@ -35,13 +36,16 @@ var Config *Configuration
 func main() {
 	flag.Parse()
 	Config = NewConfig(*deps, *smtpserver, *mailfrom)
+
+	lentil.ReaderSize = *mlen
+
 	if *listener {
 		include := false
 		filter := make([]string, 0)
 		if *exclude != "" {
 			filter = strings.Split(*exclude, ",")
 		}
-		l, e := NewListener(*verbose, include, filter, *logpath, *mlen)
+		l, e := NewListener(*verbose, include, filter, *logpath)
 		if e != nil {
 			fmt.Fprintln(os.Stderr, e)
 			os.Exit(1)

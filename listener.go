@@ -20,14 +20,13 @@ type Listener struct {
 	logfile  *os.File
 }
 
-func NewListener(verbose, inclusive bool, filter []string, logpath string, mlen int) (*Listener, error) {
+func NewListener(verbose, inclusive bool, filter []string, logpath string) (*Listener, error) {
 	this := new(Listener)
 	this.logpath = logpath
 	err := this.resetLog()
 	if err != nil {
 		return nil, err
 	}
-	lentil.ReaderSize = mlen
 	q, err := lentil.Dial(Config.QueueAddr)
 	if err != nil {
 		return nil, err
