@@ -11,7 +11,7 @@ func SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) er
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer c.Text.Close()
 	if err = c.Hello("localhost"); err != nil {
 		return err
 	}
