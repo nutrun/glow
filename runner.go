@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/nutrun/lentil"
 	"log"
-	"net/smtp"
 	"os"
 	"os/exec"
 	"os/user"
@@ -129,7 +128,7 @@ func (this *Runner) mail(msg *Message, e error) {
 	subject := fmt.Sprintf("Subject: FAILED: %s\r\n\r\n", msg.getCommand())
 	hostname, _ := os.Hostname()
 	mail := fmt.Sprintf("%s%s", subject, fmt.Sprintf("Ran on [%s]\n%s\n%s\n%s", hostname, subject, e, msg.readOut()))
-	e = smtp.SendMail(Config.SmtpServer, nil, Config.MailFrom, to, []byte(mail))
+	e = SendMail(Config.SmtpServer, nil, Config.MailFrom, to, []byte(mail))
 	if e != nil {
 		this.logger.Printf("ERROR: %s\n", e)
 	}
